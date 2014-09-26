@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{67904DB7-B0E8-424A-810F-16067E5E89EB}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>EncounterScripts</RootNamespace>
+    <AssemblyName>EncounterScripts</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="English\138\Western La Noscea.txt" />
+    <Content Include="English\141\Central Thanalan.txt" />
+    <Content Include="English\147\Northern Thanalan.txt" />
+    <Content Include="English\148\Central Shroud.txt" />
+    <Content Include="English\152\East Shroud.txt" />
+    <Content Include="English\153\South Shroud.txt" />
+    <Content Include="English\154\North Shroud.txt" />
+    <Content Include="English\155\Coerthas Central Highlands.txt" />
+    <Content Include="English\166\Haukke Manor.txt" />
+    <Content Include="English\180\Outer La Noscea.txt" />
+    <Content Include="English\245\Binding Coil of Bahamut - Turn 5.txt" />
+    <Content Include="English\293\The Navel %28Hard%29.txt" />
+    <Content Include="English\349\Copperbell Mines Hard.txt" />
+    <Content Include="English\355\Second Coil Of Bahamut - Turn 1.txt" />
+    <Content Include="English\356\Second Coil Of Bahamut - Turn 2.txt" />
+    <Content Include="English\357\Second Coil Of Bahamut - Turn 3.txt" />
+    <Content Include="English\358\Second Coil Of Bahamut - Turn 4.txt" />
+    <Content Include="English\362\Brayflox %28Hard%29.txt" />
+    <Content Include="English\364\Thornmarch %28Extreme%29.txt" />
+    <Content Include="English\372\Syrcus Tower.txt" />
+    <Content Include="English\373\The Tam-Tara Deepcroft %28Hard%29.txt" />
+    <Content Include="English\374\Striking Tree.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="English\154\Balloon.cs" />
+    <Compile Include="English\293\Titan.cs" />
+    <Compile Include="English\355\Rafflesia.cs" />
+    <Compile Include="English\356\Melusine.cs" />
+    <Compile Include="English\357\The Avatar.cs" />
+    <Compile Include="English\358\Nael Deus Darnus.3.cs" />
+    <Compile Include="English\358\Nael Deus Darnus.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="FFXIVAPP.Common">
+      <HintPath>..\..\..\FFXIVAPP.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="FFXIVAPP.IPluginInterface">
+      <HintPath>..\..\..\FFXIVAPP.IPluginInterface.dll</HintPath>
+    </Reference>
+    <Reference Include="FFXIVAPP.Localization">
+      <HintPath>..\..\..\FFXIVAPP.Localization.dll</HintPath>
+    </Reference>
+    <Reference Include="FFXIVDBM.Plugin">
+      <HintPath>..\FFXIVDBM.Plugin.dll</HintPath>
+    </Reference>
+    <Reference Include="HtmlAgilityPack">
+      <HintPath>..\..\..\HtmlAgilityPack.dll</HintPath>
+    </Reference>
+    <Reference Include="MahApps.Metro">
+      <HintPath>..\..\..\MahApps.Metro.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="NAudio">
+      <HintPath>..\..\..\NAudio.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog">
+      <HintPath>..\..\..\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Windows" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.5">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.5 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

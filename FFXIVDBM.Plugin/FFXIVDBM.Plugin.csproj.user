@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <StartAction>Program</StartAction>
+    <StartProgram>C:\Users\methejuggler\Documents\FFXIV\Parser\FFXIVAPP.Client.exe</StartProgram>
+    <ReferencePath>C:\Users\methejuggler\Documents\FFXIV\Parser\</ReferencePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <StartWorkingDirectory>C:\Users\methejuggler\Documents\FFXIV\Parser\</StartWorkingDirectory>
+    <StartProgram>C:\Users\methejuggler\Documents\FFXIV\Parser\FFXIVAPP.Client.exe</StartProgram>
+  </PropertyGroup>
+</Project>
