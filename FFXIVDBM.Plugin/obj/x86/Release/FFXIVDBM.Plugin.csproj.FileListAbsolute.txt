@@ -16,3 +16,4 @@ C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Re
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Release\Views\SampleView.baml
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Release\FFXIVDBM.Plugin.g.resources
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Release\FFXIVDBM.Plugin.dll
+C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Release\FFXIVDBM.Plugin.csprojResolveAssemblyReference.cache

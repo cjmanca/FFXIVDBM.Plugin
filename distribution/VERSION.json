@@ -37,43 +37,43 @@
             },
             {
                 "Name": "The Navel (Hard).txt",
-                "Location": "zones\English\293"
+                "Location": "zones/English/293"
             },
             {
                 "Name": "Titan.cs",
-                "Location": "zones\English\293"
+                "Location": "zones/English/293"
             },
             {
                 "Name": "Rafflesia.cs",
-                "Location": "zones\English\355"
+                "Location": "zones/English/355"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 1.txt",
-                "Location": "zones\English\355"
+                "Location": "zones/English/355"
             },
             {
                 "Name": "Melusine.cs",
-                "Location": "zones\English\356"
+                "Location": "zones/English/356"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 2.txt",
-                "Location": "zones\English\356"
+                "Location": "zones/English/356"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 3.txt",
-                "Location": "zones\English\357"
+                "Location": "zones/English/357"
             },
             {
                 "Name": "The Avatar.cs",
-                "Location": "zones\English\357"
+                "Location": "zones/English/357"
             },
             {
                 "Name": "Nael Deus Darnus.cs",
-                "Location": "zones\English\358"
+                "Location": "zones/English/358"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 4.txt",
-                "Location": "zones\English\358"
+                "Location": "zones/English/358"
             }
         ],
         "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution"

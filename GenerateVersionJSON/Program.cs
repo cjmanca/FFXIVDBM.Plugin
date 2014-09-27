@@ -117,7 +117,7 @@ namespace GenerateVersionJSON
                 foreach (System.IO.DirectoryInfo dirInfo in subDirs)
                 {
                     // Resursive call for each subdirectory.
-                    WalkDirectoryTree(dirInfo, path + @"\" + dirInfo.Name);
+                    WalkDirectoryTree(dirInfo, path + @"/" + dirInfo.Name);
                 }
             }
         }
