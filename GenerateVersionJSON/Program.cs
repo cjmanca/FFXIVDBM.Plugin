@@ -19,7 +19,7 @@ namespace GenerateVersionJSON
         static void Main(string[] args)
         {
             string mainAssembly = @"FFXIVDBM.Plugin";
-            string updateURL = @"https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution";
+            string updateURL = @"https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/";
 
 
             FileVersionInfo mainAssemblyVersionInfo = FileVersionInfo.GetVersionInfo(mainAssembly + @".dll");
