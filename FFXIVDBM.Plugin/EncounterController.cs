@@ -516,7 +516,7 @@ namespace FFXIVDBM.Plugin
                     debug("updateData check for new agro", DBMErrorLevel.EngineErrors, e2);
                 }
 
-
+                List<uint> newEnmityList = playerEntity.EnmityEntries.Select(x => x.ID).ToList();
 
                 try
                 {
@@ -557,18 +557,27 @@ namespace FFXIVDBM.Plugin
                                     }
                                     else
                                     {
-                                        // ClaimedByID seems unreliable sometimes, and IsClaimed never seems to work,
-                                        // so instead, check to see if the mob is full health but NOT in the agroList anymore
-                                        // Also make sure we're alive, since the agro list is temporarily empty when dead.
-                                        if (!diff.Contains(tmpActor.ID) && tmpActor.HPCurrent >= tmpActor.HPMax && CurrentUser.HPCurrent > 0)
+                                        // remove if dead
+                                        if (tmpActor.HPCurrent <= 0)
                                         {
                                             handleRemoveEntry = 5;
                                             handleRemove(tmpActor);
                                         }
                                         else
                                         {
-                                            // update our copy with the new info
-                                            copyActorEntity(tmpEnt, ref tmpActor);
+                                            // ClaimedByID seems unreliable sometimes, and IsClaimed never seems to work,
+                                            // so instead, check to see if the mob is full health but NOT in the agroList anymore
+                                            // Also make sure we're alive, since the agro list is temporarily empty when dead.
+                                            if (!newEnmityList.Contains(tmpActor.ID) && tmpActor.HPCurrent >= tmpActor.HPMax && CurrentUser.HPCurrent > 0)
+                                            {
+                                                handleRemoveEntry = 6;
+                                                handleRemove(tmpActor);
+                                            }
+                                            else
+                                            {
+                                                // update our copy with the new info
+                                                copyActorEntity(tmpEnt, ref tmpActor);
+                                            }
                                         }
                                     }
                                 }
