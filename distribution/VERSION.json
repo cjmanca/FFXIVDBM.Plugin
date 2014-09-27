@@ -1,0 +1,81 @@
+{
+    "PluginInfo": {
+        "Name": "FFXIVDBM.Plugin",
+        "Version": "1.0.5382.33445",
+        "Files": [
+            {
+                "Name": "FFXIVDBM.Plugin.dll",
+                "Location": ""
+            },
+            {
+                "Name": "Logo.png",
+                "Location": ""
+            },
+            {
+                "Name": "PluginInfo.xml",
+                "Location": ""
+            },
+            {
+                "Name": "VERSION.json",
+                "Location": ""
+            },
+            {
+                "Name": "EncounterScripts.csproj",
+                "Location": "zones"
+            },
+            {
+                "Name": "EncounterScripts.csproj.user",
+                "Location": "zones"
+            },
+            {
+                "Name": "EncounterScripts.sln",
+                "Location": "zones"
+            },
+            {
+                "Name": "EncounterScripts.v12.suo",
+                "Location": "zones"
+            },
+            {
+                "Name": "The Navel (Hard).txt",
+                "Location": "zones\English\293"
+            },
+            {
+                "Name": "Titan.cs",
+                "Location": "zones\English\293"
+            },
+            {
+                "Name": "Rafflesia.cs",
+                "Location": "zones\English\355"
+            },
+            {
+                "Name": "Second Coil Of Bahamut - Turn 1.txt",
+                "Location": "zones\English\355"
+            },
+            {
+                "Name": "Melusine.cs",
+                "Location": "zones\English\356"
+            },
+            {
+                "Name": "Second Coil Of Bahamut - Turn 2.txt",
+                "Location": "zones\English\356"
+            },
+            {
+                "Name": "Second Coil Of Bahamut - Turn 3.txt",
+                "Location": "zones\English\357"
+            },
+            {
+                "Name": "The Avatar.cs",
+                "Location": "zones\English\357"
+            },
+            {
+                "Name": "Nael Deus Darnus.cs",
+                "Location": "zones\English\358"
+            },
+            {
+                "Name": "Second Coil Of Bahamut - Turn 4.txt",
+                "Location": "zones\English\358"
+            }
+        ],
+        "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution"
+    }
+}

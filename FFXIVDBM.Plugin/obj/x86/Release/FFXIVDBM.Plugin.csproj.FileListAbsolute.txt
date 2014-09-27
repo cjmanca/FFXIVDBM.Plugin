@@ -1,9 +1,6 @@
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\distribution\PluginInfo.xml
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\distribution\Logo.png
-C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\distribution\NLog.config
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\distribution\FFXIVDBM.Plugin.dll
-C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\distribution\FFXIVDBM.Plugin.pdb
-C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Release\FFXIVDBM.Plugin.csprojResolveAssemblyReference.cache
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Release\ShellView.g.cs
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Release\Views\AboutView.g.cs
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Release\Views\SettingsView.g.cs
@@ -19,4 +16,3 @@ C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Re
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Release\Views\SampleView.baml
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Release\FFXIVDBM.Plugin.g.resources
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Release\FFXIVDBM.Plugin.dll
-C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Release\FFXIVDBM.Plugin.pdb

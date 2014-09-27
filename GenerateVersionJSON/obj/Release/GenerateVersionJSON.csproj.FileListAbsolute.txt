@@ -1,0 +1,5 @@
+C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\GenerateVersionJSON\bin\Release\GenerateVersionJSON.exe.config
+C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\GenerateVersionJSON\bin\Release\GenerateVersionJSON.exe
+C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\GenerateVersionJSON\bin\Release\GenerateVersionJSON.pdb
+C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\GenerateVersionJSON\obj\Release\GenerateVersionJSON.exe
+C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\GenerateVersionJSON\obj\Release\GenerateVersionJSON.pdb

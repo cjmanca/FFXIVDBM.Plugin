@@ -1,6 +1,5 @@
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\build\Debug\PluginInfo.xml
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\build\Debug\Logo.png
-C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\build\Debug\NLog.config
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\build\Debug\FFXIVDBM.Plugin.dll
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\build\Debug\FFXIVDBM.Plugin.pdb
 C:\Users\methejuggler\Documents\FFXIV\FFXIVDBM.Plugin\FFXIVDBM.Plugin\obj\x86\Debug\ShellView.g.cs
