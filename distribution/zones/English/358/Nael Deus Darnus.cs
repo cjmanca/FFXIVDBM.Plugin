@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -170,12 +170,12 @@ namespace NaelDeusDarnusNS
 
             RotationAbility BahamutsFavor = new RotationAbility();
             BahamutsFavor.announceWarning = false;
-            BahamutsFavor.match = new Regex(@"Nael Deus Darnus uses Bahamut's Favor\.");
+            BahamutsFavor.match = new Regex(@" uses Bahamut's Favor\.");
             BahamutsFavor.warningMessage = "Bahamut's Favor";
 
             RotationAbility BahamutsClaw = new RotationAbility();
             BahamutsClaw.announceWarning = false;
-            BahamutsClaw.match = new Regex(@"Nael Deus Darnus uses Bahamut's Claw\.");
+            BahamutsClaw.match = new Regex(@" uses Bahamut's Claw\.");
             BahamutsClaw.warningMessage = "Bahamut's Claw";
 
             RotationAbility FireTetherOut = new RotationAbility();
@@ -378,14 +378,14 @@ namespace NaelDeusDarnusNS
 
             phaseNum = 2;
             phases[phaseNum] = new Phase();
-            phases[phaseNum].phaseEndRegex = new Regex("Nael Deus Darnus uses Megaflare");
+            phases[phaseNum].phaseEndRegex = new Regex(" uses Megaflare");
             // Golems
 
 
 
             phaseNum = 3;
             phases[phaseNum] = new Phase();
-            phases[phaseNum].phaseEndRegex = new Regex("Nael Deus Darnus uses Bahamut's Favor");
+            phases[phaseNum].phaseEndRegex = new Regex(" uses Bahamut's Favor");
             // Heavenfall/ghosts
             // Start @ 6:06
 

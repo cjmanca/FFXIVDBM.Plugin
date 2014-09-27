@@ -50,39 +50,6 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="English\138\Western La Noscea.txt" />
-    <Content Include="English\141\Central Thanalan.txt" />
-    <Content Include="English\147\Northern Thanalan.txt" />
-    <Content Include="English\148\Central Shroud.txt" />
-    <Content Include="English\152\East Shroud.txt" />
-    <Content Include="English\153\South Shroud.txt" />
-    <Content Include="English\154\North Shroud.txt" />
-    <Content Include="English\155\Coerthas Central Highlands.txt" />
-    <Content Include="English\166\Haukke Manor.txt" />
-    <Content Include="English\180\Outer La Noscea.txt" />
-    <Content Include="English\245\Binding Coil of Bahamut - Turn 5.txt" />
-    <Content Include="English\293\The Navel %28Hard%29.txt" />
-    <Content Include="English\349\Copperbell Mines Hard.txt" />
-    <Content Include="English\355\Second Coil Of Bahamut - Turn 1.txt" />
-    <Content Include="English\356\Second Coil Of Bahamut - Turn 2.txt" />
-    <Content Include="English\357\Second Coil Of Bahamut - Turn 3.txt" />
-    <Content Include="English\358\Second Coil Of Bahamut - Turn 4.txt" />
-    <Content Include="English\362\Brayflox %28Hard%29.txt" />
-    <Content Include="English\364\Thornmarch %28Extreme%29.txt" />
-    <Content Include="English\372\Syrcus Tower.txt" />
-    <Content Include="English\373\The Tam-Tara Deepcroft %28Hard%29.txt" />
-    <Content Include="English\374\Striking Tree.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="English\154\Balloon.cs" />
-    <Compile Include="English\293\Titan.cs" />
-    <Compile Include="English\355\Rafflesia.cs" />
-    <Compile Include="English\356\Melusine.cs" />
-    <Compile Include="English\357\The Avatar.cs" />
-    <Compile Include="English\358\Nael Deus Darnus.3.cs" />
-    <Compile Include="English\358\Nael Deus Darnus.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="FFXIVAPP.Common">
       <HintPath>..\..\..\FFXIVAPP.Common.dll</HintPath>
     </Reference>
@@ -114,7 +81,6 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Windows" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5">
       <Visible>False</Visible>
@@ -131,6 +97,20 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="English\293\The Navel %28Hard%29.txt" />
+    <Content Include="English\355\Second Coil Of Bahamut - Turn 1.txt" />
+    <Content Include="English\356\Second Coil Of Bahamut - Turn 2.txt" />
+    <Content Include="English\357\Second Coil Of Bahamut - Turn 3.txt" />
+    <Content Include="English\358\Second Coil Of Bahamut - Turn 4.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="English\293\Titan.cs" />
+    <Compile Include="English\355\Rafflesia.cs" />
+    <Compile Include="English\356\Melusine.cs" />
+    <Compile Include="English\357\The Avatar.cs" />
+    <Compile Include="English\358\Nael Deus Darnus.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

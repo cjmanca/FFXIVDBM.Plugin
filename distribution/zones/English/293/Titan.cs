@@ -29,33 +29,33 @@ namespace TitanNS
 
 
             Rockbuster.announceWarning = false;
-            Rockbuster.match = new Regex("Titan uses Rock Buster");
+            Rockbuster.match = new Regex(" uses Rock Buster");
             Rockbuster.warningMessage = "Swipe";
             Plumes.warningTime = TimeSpan.FromSeconds(3);
 
             Landslide.announceWarning = true;
-            Landslide.match = new Regex("Titan uses Landslide");
+            Landslide.match = new Regex(" uses Landslide");
             Landslide.warningMessage = "Land slide";
 
             Stomps.announceWarning = true;
-            Stomps.match = new Regex("Titan uses Tumult");
+            Stomps.match = new Regex(" uses Tumult");
             Stomps.warningMessage = "Stomps";
 
             Plumes.announceWarning = true;
-            Plumes.match = new Regex("Titan uses Weight of the Land");
+            Plumes.match = new Regex(" uses Weight of the Land");
             Plumes.warningMessage = "Weight of the land";
             Plumes.warningTime = TimeSpan.FromSeconds(7);
 
             Bombs.announceWarning = false;
-            Bombs.match = new Regex("Titan strikes the earth, bringing a shower of bomb boulders");
+            Bombs.match = new Regex(" strikes the earth, bringing a shower of bomb boulders");
             Bombs.warningMessage = "Bombs";
 
             Gaol.announceWarning = false;
-            Gaol.match = new Regex("Titan uses Rock Throw");
+            Gaol.match = new Regex(" uses Rock Throw");
             Gaol.warningMessage = "Gaol";
 
             TableFlip.announceWarning = true;
-            TableFlip.match = new Regex("Titan uses Mountain Buster");
+            TableFlip.match = new Regex(" uses Mountain Buster");
             TableFlip.warningMessage = "Mountain buster";
 
 
@@ -64,7 +64,7 @@ namespace TitanNS
             // first rotation ability @ 18:46
             phases[1] = new Phase();
             //phases[1].phaseEndHP = 90;
-            phases[1].phaseEndRegex = new Regex("Titan uses Geocrush");
+            phases[1].phaseEndRegex = new Regex(" uses Geocrush");
             phases[1].phaseStartDelay = TimeSpan.FromSeconds(3);
 
 
@@ -81,7 +81,7 @@ namespace TitanNS
             phases[2] = new Phase();
             //phases[2].phaseEndHP = 75;
             //phases[2].phaseStartDelay = TimeSpan.FromSeconds(6);
-            phases[2].phaseEndRegex = new Regex("Titan uses Geocrush");
+            phases[2].phaseEndRegex = new Regex(" uses Geocrush");
             phases[2].phaseStartDelay = TimeSpan.FromSeconds(3);
 
             // Geocrush @ 19:12
@@ -99,7 +99,7 @@ namespace TitanNS
             // first rotation ability @ 20:07
             phases[3] = new Phase();
             //phases[3].phaseEndHP = 62.5;
-            phases[3].phaseEndRegex = new Regex("Titan uses Geocrush");
+            phases[3].phaseEndRegex = new Regex(" uses Geocrush");
             phases[3].phaseStartDelay = TimeSpan.FromSeconds(3);
 
             // Geocrush @ 19:57
@@ -119,7 +119,7 @@ namespace TitanNS
             // first rotation ability @ 21:25
             phases[4] = new Phase();
             //phases[3].phaseStartDelay = TimeSpan.FromSeconds(6);
-            phases[4].phaseEndRegex = new Regex("Titan uses Earthen Fury");
+            phases[4].phaseEndRegex = new Regex(" uses Earthen Fury");
             phases[4].phaseStartDelay = TimeSpan.FromSeconds(3);
 
 
@@ -145,7 +145,7 @@ namespace TitanNS
             phases[5] = new Phase();
             //phases[3].phaseEndHP = 0;
             //phases[3].phaseStartDelay = TimeSpan.FromSeconds(6);
-            //phases[5].phaseEndRegex = new Regex("Titan uses Geocrush"); // phase 5 doesn't end until titan dies or the party wipes
+            //phases[5].phaseEndRegex = new Regex(" uses Geocrush"); // phase 5 doesn't end until titan dies or the party wipes
             phases[5].phaseStartDelay = TimeSpan.FromSeconds(4);
 
 
