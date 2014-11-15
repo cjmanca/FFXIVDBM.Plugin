@@ -18,6 +18,11 @@ namespace FFXIVDBM.Plugin
         public TimeSpan collectMultipleLinesFor = TimeSpan.FromSeconds(0.25);
         public bool warningDelayStarted = false;
 
+        public bool healthWarningAlreadyTriggered = false;
+        public double healthTriggerAt = -1;
+        public string healthMessage = "";
+        public WarningCallback healthCallback = null;
+
 
         public void start(bool subtractWarning = true)
         {

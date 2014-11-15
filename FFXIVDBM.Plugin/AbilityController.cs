@@ -11,6 +11,7 @@ namespace FFXIVDBM.Plugin
 {
     public class AbilityController
     {
+        #region Property Bindings
         public static List<ActorEntity> agroList
         {
             get
@@ -74,28 +75,33 @@ namespace FFXIVDBM.Plugin
                 return EncounterController.zone;
             }
         }
+        public int phase
+        {
+            get
+            {
+                return _phase;
+            }
+        }
+        #endregion
 
         public Dictionary<int,Phase> phases;
-        public int phase = 1;
 
         public List<TriggeredAbility> timedAbilities = new List<TriggeredAbility>();
 
-        public DateTime nextRotationTime = DateTime.Now;
-        public RotationAbility nextRotationAbility = null;
-
-        public Dictionary<TimeSpan, RotationAbility>.Enumerator nextRotationEnumerator;
-
         public string bossName = "";
         public ActorEntity bossEntity = null;
+        public double bossHPPercent = 100;
 
+
+        private int _phase = 1;
+
+        private DateTime nextRotationTime = DateTime.Now;
+        private RotationAbility nextRotationAbility = null;
+
+        private Dictionary<TimeSpan, RotationAbility>.Enumerator nextRotationEnumerator;
 
         private bool _inController = false;
 
-
-        public bool inController()
-        {
-            return _inController;
-        }
 
         public AbilityController()
         {
@@ -106,11 +112,17 @@ namespace FFXIVDBM.Plugin
             _inController = false;
         }
 
+
+        public bool inController()
+        {
+            return _inController;
+        }
+
         public bool bossCheck(ActorEntity mob)
         {
             _inController = true;
 
-            if (mob.Name == bossName)
+            if (mob.Name.Trim() == bossName.Trim())
             {
                 bossEntity = mob;
 
@@ -124,7 +136,7 @@ namespace FFXIVDBM.Plugin
 
         public void nextPhase()
         {
-            setPhase(phase + 1);
+            setPhase(_phase + 1);
         }
 
 
@@ -135,26 +147,32 @@ namespace FFXIVDBM.Plugin
 
             TimeSpan totalTime = TimeSpan.Zero;
 
-            phase = phaseNum;
+            _phase = phaseNum;
 
-            if (phases.ContainsKey(phase))
+            if (phases.ContainsKey(_phase))
             {
 
-                phases[phase].phaseStarted = DateTime.Now + phases[phase].phaseStartDelay;
+                phases[_phase].phaseStarted = DateTime.Now + phases[_phase].phaseStartDelay;
 
-                if (phases[phase].rotationAbilities.Any())
+                if (phases[_phase].rotationAbilities.Any())
                 {
-                    nextRotationEnumerator = phases[phase].rotationAbilitiesWarningTime.GetEnumerator();
+                    nextRotationEnumerator = phases[_phase].rotationAbilitiesWarningTime.GetEnumerator();
                     nextRotationEnumerator.MoveNext();
 
-                    nextRotationTime = phases[phase].phaseStarted + nextRotationEnumerator.Current.Key;
+                    nextRotationTime = phases[_phase].phaseStarted + nextRotationEnumerator.Current.Key;
                     nextRotationAbility = nextRotationEnumerator.Current.Value;
 
 
-                    totalTime = phases[phase].rotationAbilities.Last().Key;
+                    totalTime = phases[_phase].rotationAbilities.Last().Key;
                 }
 
-                phases[phase].phaseLength = totalTime;
+                phases[_phase].phaseLength = totalTime;
+
+                if (phases[_phase].onPhaseStart != null)
+                {
+                    phases[_phase].onPhaseStart.start();
+                }
+
             }
 
             _inController = false;
@@ -174,19 +192,22 @@ namespace FFXIVDBM.Plugin
             tickWorking = true;
             _inController = true;
 
-            foreach (ActorEntity ent in EncounterController.agroList)
+
+            if (bossEntity != null)
             {
-                if (bossCheck(ent))
+                if (phases.ContainsKey(_phase))
                 {
-                    if (phases.ContainsKey(phase))
+                    bossHPPercent = ((double)bossEntity.HPPercent) * 100.0d;
+
+                    if (bossHPPercent < phases[_phase].phaseEndHP)
                     {
-                        if ((((double)ent.HPPercent) * 100.0d) < phases[phase].phaseEndHP)
-                        {
-                            nextPhase();
-                        }
+                        nextPhase();
                     }
+
+                    
                 }
             }
+
             
 
             if (nextRotationTime <= DateTime.Now)
@@ -194,9 +215,9 @@ namespace FFXIVDBM.Plugin
                 processRotationAbility();
             }
 
-            if (phases.ContainsKey(phase))
+            if (phases.ContainsKey(_phase))
             {
-                testTimedAbilityTicks(phases[phase].timedAbilities);
+                testTimedAbilityTicks(phases[_phase].timedAbilities);
             }
 
             testTimedAbilityTicks(timedAbilities);
@@ -207,164 +228,134 @@ namespace FFXIVDBM.Plugin
 
         private void testTimedAbilityTicks(List<TriggeredAbility> timedAbils)
         {
-            Regex rgx;
-
             foreach (TriggeredAbility abil in timedAbils)
             {
-                bool delayed = abil.timerStartedAt > DateTime.Now - abil.collectMultipleLinesFor;
+                testTimedAbilityDelayedMatch(abil);
+                testTimedAbilityTimer(abil);
+                testTimedAbilityHealth(abil);
+            }
+        }
 
-                if (abil.announceWarning && abil.warningDelayStarted && !delayed)
+        private void testTimedAbilityDelayedMatch(TriggeredAbility abil)
+        {
+            bool delayed = abil.timerStartedAt > DateTime.Now - abil.collectMultipleLinesFor;
+
+            if (abil.announceWarning && abil.warningDelayStarted && !delayed)
+            {
+                abil.warningDelayStarted = false;
+                string message = parseMessage(abil, abil.matchMessage);
+
+                tts(message);
+            }
+        }
+            
+        private void testTimedAbilityTimer(TriggeredAbility abil)
+        {
+            if (abil.timerStarted)
+            {
+                if (abil.nextAbilityTime <= DateTime.Now)
                 {
-                    string message = abil.matchMessage;
+                    abil.timerStarted = false;
 
-                    abil.warningDelayStarted = false;
-
-                    if (abil.lastMatch.Count > 0)
+                    if (abil.announceWarning)
                     {
-                        foreach (KeyValuePair<int, Dictionary<string, string>> collections in abil.lastMatch)
-                        {
-                            foreach (KeyValuePair<string, string> group in collections.Value)
-                            {
-                                rgx = new Regex("\\$\\{" + Regex.Escape(group.Key) + "\\." + Regex.Escape(collections.Key.ToString()) + "\\}");
+                        string message = parseMessage(abil, abil.warningMessage);
 
-                                if (rgx.IsMatch(message))
-                                {
-                                    message = rgx.Replace(message, group.Value);
-                                }
-                            }
-                        }
-
-                        foreach (KeyValuePair<int, Dictionary<string, string>> collections in abil.lastMatch)
-                        {
-                            foreach (KeyValuePair<string, string> group in collections.Value)
-                            {
-                                rgx = new Regex("\\$" + Regex.Escape(group.Key));
-                                message = rgx.Replace(message, group.Value);
-
-                                rgx = new Regex("\\$\\{" + Regex.Escape(group.Key) + "\\}");
-                                message = rgx.Replace(message, group.Value);
-                            }
-                        }
+                        tts(message);
                     }
 
-                    rgx = new Regex("\\$\\{[^\\}]+\\}");
-                    message = rgx.Replace(message, "");
-                    rgx = new Regex("\\$[^ ]+");
-                    message = rgx.Replace(message, "");
-
-                    tts(message);
-                }
-
-
-                if (abil.timerStarted)
-                {
-                    if (abil.nextAbilityTime <= DateTime.Now)
+                    if (abil.warningCallback != null)
                     {
-                        abil.timerStarted = false;
-
-                        if (abil.announceWarning)
-                        {
-                            string message = abil.warningMessage;
-
-                            if (abil.lastMatch.Count > 0)
-                            {
-                                foreach (KeyValuePair<int, Dictionary<string, string>> collections in abil.lastMatch)
-                                {
-                                    foreach (KeyValuePair<string, string> group in collections.Value)
-                                    {
-                                        rgx = new Regex("\\$\\{" + Regex.Escape(group.Key) + "\\." + Regex.Escape(collections.Key.ToString()) + "\\}");
-
-                                        if (rgx.IsMatch(message))
-                                        {
-                                            message = rgx.Replace(message, group.Value);
-                                        }
-                                    }
-                                }
-
-                                foreach (KeyValuePair<int, Dictionary<string, string>> collections in abil.lastMatch)
-                                {
-                                    foreach (KeyValuePair<string, string> group in collections.Value)
-                                    {
-                                        rgx = new Regex("\\$" + Regex.Escape(group.Key));
-                                        message = rgx.Replace(message, group.Value);
-
-                                        rgx = new Regex("\\$\\{" + Regex.Escape(group.Key) + "\\}");
-                                        message = rgx.Replace(message, group.Value);
-                                    }
-                                }
-                            }
-
-                            rgx = new Regex("\\$\\{[^\\}]+\\}");
-                            message = rgx.Replace(message, "");
-                            rgx = new Regex("\\$[^ ]+");
-                            message = rgx.Replace(message, "");
-
-                            tts(message);
-                        }
-
-                        if (abil.warningCallback != null)
-                        {
-                            _inController = false;
-                            abil.warningCallback(abil);
-                            _inController = true;
-                        }
+                        _inController = false;
+                        abil.warningCallback(abil);
+                        _inController = true;
+                    }
 
 
-                        if (abil.timerAutoRestart)
-                        {
-                            abil.start(false);
-                        }
+                    if (abil.timerAutoRestart)
+                    {
+                        abil.start(false);
                     }
                 }
             }
         }
+        private void testTimedAbilityHealth(TriggeredAbility abil)
+        {
+            if (abil.healthTriggerAt >= 0 && bossHPPercent < abil.healthTriggerAt && !abil.healthWarningAlreadyTriggered)
+            {
+                abil.healthWarningAlreadyTriggered = true;
+
+                if (abil.announceWarning)
+                {
+                    string message = parseMessage(abil, abil.healthMessage);
+
+                    tts(message);
+                }
+
+                if (abil.healthCallback != null)
+                {
+                    _inController = false;
+                    abil.healthCallback(abil);
+                    _inController = true;
+                }
+            }
+        }
+
+
+        private string parseMessage(Ability abil, string message)
+        {
+            Regex rgx;
+
+            if (abil.lastMatch.Count > 0)
+            {
+                foreach (KeyValuePair<int, Dictionary<string, string>> collections in abil.lastMatch)
+                {
+                    foreach (KeyValuePair<string, string> group in collections.Value)
+                    {
+                        rgx = new Regex("\\$\\{" + Regex.Escape(group.Key) + "\\." + Regex.Escape(collections.Key.ToString()) + "\\}");
+
+                        if (rgx.IsMatch(message))
+                        {
+                            message = rgx.Replace(message, group.Value);
+                        }
+                    }
+                }
+
+                foreach (KeyValuePair<int, Dictionary<string, string>> collections in abil.lastMatch)
+                {
+                    foreach (KeyValuePair<string, string> group in collections.Value)
+                    {
+                        rgx = new Regex("\\$" + Regex.Escape(group.Key));
+                        message = rgx.Replace(message, group.Value);
+
+                        rgx = new Regex("\\$\\{" + Regex.Escape(group.Key) + "\\}");
+                        message = rgx.Replace(message, group.Value);
+                    }
+                }
+            }
+
+            rgx = new Regex("\\$\\{[^\\}]+\\}");
+            message = rgx.Replace(message, "");
+            rgx = new Regex("\\$[^ ]+");
+            message = rgx.Replace(message, "");
+
+            return message;
+        }
+
+
 
         private void processRotationAbility()
         {
             Regex rgx;
 
-            if (phases.ContainsKey(phase))
+            if (phases.ContainsKey(_phase))
             {
-                if (phases[phase].rotationAbilities.Any())
+                if (phases[_phase].rotationAbilities.Any())
                 {
                     string debugOut = nextRotationAbility.warningMessage + " warning time. ";
                     if (nextRotationAbility.announceWarning)
                     {
-                        string message = nextRotationAbility.warningMessage;
-
-                        if (nextRotationAbility.lastMatch.Count > 0)
-                        {
-                            foreach (KeyValuePair<int, Dictionary<string, string>> collections in nextRotationAbility.lastMatch)
-                            {
-                                foreach (KeyValuePair<string, string> group in collections.Value)
-                                {
-                                    rgx = new Regex("\\$\\{" + Regex.Escape(group.Key) + "\\." + Regex.Escape(collections.Key.ToString()) + "\\}");
-
-                                    if (rgx.IsMatch(message))
-                                    {
-                                        message = rgx.Replace(message, group.Value);
-                                    }
-                                }
-                            }
-
-                            foreach (KeyValuePair<int, Dictionary<string, string>> collections in nextRotationAbility.lastMatch)
-                            {
-                                foreach (KeyValuePair<string, string> group in collections.Value)
-                                {
-                                    rgx = new Regex("\\$" + Regex.Escape(group.Key));
-                                    message = rgx.Replace(message, group.Value);
-
-                                    rgx = new Regex("\\$\\{" + Regex.Escape(group.Key) + "\\}");
-                                    message = rgx.Replace(message, group.Value);
-                                }
-                            }
-                        }
-
-                        rgx = new Regex("\\$\\{[^\\}]+\\}");
-                        message = rgx.Replace(message, "");
-                        rgx = new Regex("\\$[^ ]+");
-                        message = rgx.Replace(message, "");
-
+                        string message = parseMessage(nextRotationAbility, nextRotationAbility.warningMessage);
 
                         tts(message);
                     }
@@ -375,13 +366,13 @@ namespace FFXIVDBM.Plugin
 
                     if (!nextRotationEnumerator.MoveNext())
                     {
-                        nextRotationEnumerator = phases[phase].rotationAbilitiesWarningTime.GetEnumerator();
+                        nextRotationEnumerator = phases[_phase].rotationAbilitiesWarningTime.GetEnumerator();
                         nextRotationEnumerator.MoveNext();
 
-                        phases[phase].phaseStarted = phases[phase].phaseStarted + phases[phase].phaseLength;
+                        phases[_phase].phaseStarted = phases[_phase].phaseStarted + phases[_phase].phaseLength;
                     }
 
-                    nextRotationTime = phases[phase].phaseStarted + nextRotationEnumerator.Current.Key;
+                    nextRotationTime = phases[_phase].phaseStarted + nextRotationEnumerator.Current.Key;
                     nextRotationAbility = nextRotationEnumerator.Current.Value;
 
                     debugOut += "nextRotationTime: " + nextRotationTime + " nextRotationAbility: " + nextRotationAbility.warningMessage;
@@ -409,56 +400,58 @@ namespace FFXIVDBM.Plugin
         }
 
 
+        private void testTimedAbilityRegex(TriggeredAbility abil, string line)
+        {
+            if (abil != null && abil.matchRegex && abil.match != null)
+            {
+                Match m = abil.match.Match(line);
+
+                if (m.Success)
+                {
+                    bool delayed = abil.timerStartedAt > DateTime.Now - abil.collectMultipleLinesFor;
+                    abil.warningDelayStarted = true;
+
+                    if (abil.collectMultipleLinesFor == TimeSpan.Zero || !delayed)
+                    {
+                        abil.lastMatch.Clear();
+                    }
+
+                    int lineNumber = abil.lastMatch.Count + 1;
+
+                    abil.lastMatch[lineNumber] = new Dictionary<string, string>();
+
+                    string[] groupNames = abil.match.GetGroupNames();
+
+                    foreach (string groupName in groupNames)
+                    {
+                        abil.lastMatch[lineNumber][groupName] = m.Groups[groupName].Value;
+                    }
+
+
+
+                    if (abil.matchCallback != null)
+                    {
+                        _inController = false;
+                        abil.matchCallback(abil, m);
+                        _inController = true;
+                    }
+
+                    abil.start();
+                }
+            }
+        }
+
         private void testTimedAbilityRegex(List<TriggeredAbility> timedAbils, string line)
         {
-            Regex rgx = null;
-            string message;
-
             foreach (TriggeredAbility abil in timedAbils)
             {
-                if (abil.matchRegex && abil.match != null)
-                {
-                    Match m = abil.match.Match(line);
-
-                    if (m.Success)
-                    {
-                        bool delayed = abil.timerStartedAt > DateTime.Now - abil.collectMultipleLinesFor;
-                        abil.warningDelayStarted = true;
-
-                        if (abil.collectMultipleLinesFor == TimeSpan.Zero || !delayed)
-                        {
-                            abil.lastMatch.Clear();
-                        }
-
-                        int lineNumber = abil.lastMatch.Count + 1;
-
-                        abil.lastMatch[lineNumber] = new Dictionary<string, string>();
-
-                        string[] groupNames = abil.match.GetGroupNames();
-
-                        foreach (string groupName in groupNames)
-                        {
-                            abil.lastMatch[lineNumber][groupName] = m.Groups[groupName].Value;
-                        }
-
-
-
-                        if (abil.matchCallback != null)
-                        {
-                            _inController = false;
-                            abil.matchCallback(abil, m);
-                            _inController = true;
-                        }
-
-                        abil.start();
-                    }
-                }
+                testTimedAbilityRegex(abil, line);
             }
         }
 
         private void testRotationAbilityRegex(string line)
         {
-            foreach (KeyValuePair<TimeSpan, RotationAbility> abil in phases[phase].rotationAbilities)
+            foreach (KeyValuePair<TimeSpan, RotationAbility> abil in phases[_phase].rotationAbilities)
             {
                 if (abil.Value.matchRegex && abil.Value.match != null)
                 {
@@ -496,15 +489,15 @@ namespace FFXIVDBM.Plugin
 
 
                             // First, figure out which point in the rotation is closest to our current time
-                            DateTime abilThisRotationsTime = phases[phase].phaseStarted + abil.Key;
-                            DateTime abilLastRotationsTime = abilThisRotationsTime - phases[phase].phaseLength;
-                            DateTime abilNextRotationsTime = abilThisRotationsTime + phases[phase].phaseLength;
+                            DateTime abilThisRotationsTime = phases[_phase].phaseStarted + abil.Key;
+                            DateTime abilLastRotationsTime = abilThisRotationsTime - phases[_phase].phaseLength;
+                            DateTime abilNextRotationsTime = abilThisRotationsTime + phases[_phase].phaseLength;
 
                             TimeSpan timeBetweenNowAndThisRotationsTime = (DateTime.Now - abilThisRotationsTime).Duration();
                             TimeSpan timeUntilNextRotationsAbil = (abilNextRotationsTime - DateTime.Now).Duration();
                             TimeSpan timeSinceLastRotationsAbil = (DateTime.Now - abilLastRotationsTime).Duration();
 
-                            EncounterController.debug(abil.Value.warningMessage + " matched (" + timeSinceLastRotationsAbil + ", " + timeBetweenNowAndThisRotationsTime + ", " + timeUntilNextRotationsAbil + "), phaseStarted: " + phases[phase].phaseStarted + " nextRotationTime: " + nextRotationTime, DBMErrorLevel.FineTimings);
+                            EncounterController.debug(abil.Value.warningMessage + " matched (" + timeSinceLastRotationsAbil + ", " + timeBetweenNowAndThisRotationsTime + ", " + timeUntilNextRotationsAbil + "), phaseStarted: " + phases[_phase].phaseStarted + " nextRotationTime: " + nextRotationTime, DBMErrorLevel.FineTimings);
 
                             if (timeUntilNextRotationsAbil < timeSinceLastRotationsAbil) // already passed this rotation, don't need to check last rotation times
                             {
@@ -512,10 +505,10 @@ namespace FFXIVDBM.Plugin
                                 {
                                     if (timeUntilNextRotationsAbil <= TimeSpan.FromSeconds(10))
                                     {
-                                        phases[phase].phaseStarted += timeUntilNextRotationsAbil;
+                                        phases[_phase].phaseStarted += timeUntilNextRotationsAbil;
                                         nextRotationTime += timeUntilNextRotationsAbil;
 
-                                        EncounterController.debug(" - timeUntilNextRotationsAbil closest, new phaseStarted: " + phases[phase].phaseStarted + " new nextRotationTime: " + nextRotationTime, DBMErrorLevel.FineTimings);
+                                        EncounterController.debug(" - timeUntilNextRotationsAbil closest, new phaseStarted: " + phases[_phase].phaseStarted + " new nextRotationTime: " + nextRotationTime, DBMErrorLevel.FineTimings);
 
                                     }
                                 }
@@ -523,10 +516,10 @@ namespace FFXIVDBM.Plugin
                                 {
                                     if (timeBetweenNowAndThisRotationsTime <= TimeSpan.FromSeconds(10))
                                     {
-                                        phases[phase].phaseStarted += timeBetweenNowAndThisRotationsTime;
+                                        phases[_phase].phaseStarted += timeBetweenNowAndThisRotationsTime;
                                         nextRotationTime += timeBetweenNowAndThisRotationsTime;
 
-                                        EncounterController.debug(" - timeBetweenNowAndThisRotationsTime closest, new phaseStarted: " + phases[phase].phaseStarted + " new nextRotationTime: " + nextRotationTime, DBMErrorLevel.FineTimings);
+                                        EncounterController.debug(" - timeBetweenNowAndThisRotationsTime closest, new phaseStarted: " + phases[_phase].phaseStarted + " new nextRotationTime: " + nextRotationTime, DBMErrorLevel.FineTimings);
                                     }
                                 }
                             }
@@ -536,20 +529,20 @@ namespace FFXIVDBM.Plugin
                                 {
                                     if (timeSinceLastRotationsAbil <= TimeSpan.FromSeconds(10))
                                     {
-                                        phases[phase].phaseStarted -= timeSinceLastRotationsAbil;
+                                        phases[_phase].phaseStarted -= timeSinceLastRotationsAbil;
                                         nextRotationTime -= timeSinceLastRotationsAbil;
 
-                                        EncounterController.debug(" - timeSinceLastRotationsAbil closest, new phaseStarted: " + phases[phase].phaseStarted + " new nextRotationTime: " + nextRotationTime, DBMErrorLevel.FineTimings);
+                                        EncounterController.debug(" - timeSinceLastRotationsAbil closest, new phaseStarted: " + phases[_phase].phaseStarted + " new nextRotationTime: " + nextRotationTime, DBMErrorLevel.FineTimings);
                                     }
                                 }
                                 else
                                 {
                                     if (timeBetweenNowAndThisRotationsTime <= TimeSpan.FromSeconds(10))
                                     {
-                                        phases[phase].phaseStarted -= timeBetweenNowAndThisRotationsTime;
+                                        phases[_phase].phaseStarted -= timeBetweenNowAndThisRotationsTime;
                                         nextRotationTime -= timeBetweenNowAndThisRotationsTime;
 
-                                        EncounterController.debug(" - timeBetweenNowAndThisRotationsTime closest, new phaseStarted: " + phases[phase].phaseStarted + " new nextRotationTime: " + nextRotationTime, DBMErrorLevel.FineTimings);
+                                        EncounterController.debug(" - timeBetweenNowAndThisRotationsTime closest, new phaseStarted: " + phases[_phase].phaseStarted + " new nextRotationTime: " + nextRotationTime, DBMErrorLevel.FineTimings);
                                     }
                                 }
                             }
@@ -572,16 +565,26 @@ namespace FFXIVDBM.Plugin
         {
             _inController = true;
 
-            if (phases.ContainsKey(phase))
+            if (phases.ContainsKey(_phase))
             {
-                if (phases[phase].phaseEndRegex != null && phases[phase].phaseEndRegex.IsMatch(line))
+                if (phases[_phase].phaseEndRegex != null && phases[_phase].phaseEndRegex.IsMatch(line))
                 {
+                    // save the regex to use to trigger the next phase's onPhaseStart
+                    Regex endRegex = phases[_phase].phaseEndRegex;
+
                     nextPhase();
+                    
+                    if (phases[_phase].onPhaseStart != null)
+                    {
+                        phases[_phase].onPhaseStart.match = endRegex;
+
+                        phases[_phase].timedAbilities.Add(phases[_phase].onPhaseStart);
+                    }
                 }
             }
-            if (phases.ContainsKey(phase)) // test again, since we may have just switched phases
+            if (phases.ContainsKey(_phase)) // test again, since we may have just switched phases
             {
-                testTimedAbilityRegex(phases[phase].timedAbilities, line);
+                testTimedAbilityRegex(phases[_phase].timedAbilities, line);
                 testTimedAbilityRegex(timedAbilities, line);
 
                 testRotationAbilityRegex(line);

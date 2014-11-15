@@ -12,43 +12,96 @@ namespace MelusineNS
 
     public class MainEncounterLogic : AbilityController, IEncounter
     {
+        int renaudCount = 0;
+        bool pausedDamage = false;
+        DateTime lastRenaud = DateTime.Now;
+        DateTime lastVoice = DateTime.Now;
+
         public void onStartEncounter()
         {
             // bossName is needed if you want health based phase swaps
             bossName = "Melusine";
 
 
+            TriggeredAbility PetrifactionTrigger = new TriggeredAbility();
+            timedAbilities.Add(PetrifactionTrigger);
 
-            TriggeredAbility CursedShriek = new TriggeredAbility();
-
-            CursedShriek.match = new Regex("(?<member>[^ ]+?) [^ ]+ suffers the effect of Cursed Shriek");
-            CursedShriek.matchMessage = "Shriek on ${member}";
-            CursedShriek.warningMessage = "3. 2. 1";
-            CursedShriek.timerDuration = TimeSpan.FromSeconds(10);
-            CursedShriek.warningTime = TimeSpan.FromSeconds(3);
-
-            timedAbilities.Add(CursedShriek);
+            PetrifactionTrigger.match = new Regex(@" readies Petrifaction\.");
+            PetrifactionTrigger.matchMessage = "petrefaction look away";
 
 
-            TriggeredAbility CursedVoice = new TriggeredAbility();
-
-            CursedVoice.match = new Regex("(?<member>[^ ]+?) [^ ]+ suffers the effect of Cursed Voice");
-            CursedVoice.matchMessage = "${member.1}, ${member.2}, and ${member.3}";
-
-            timedAbilities.Add(CursedVoice);
 
 
-            TriggeredAbility Petrifaction = new TriggeredAbility();
 
-            Petrifaction.match = new Regex("readies Petrifaction");
-            Petrifaction.matchMessage = "Petrefaction look away";
+            TriggeredAbility CursedShriekTrigger = new TriggeredAbility();
+            timedAbilities.Add(CursedShriekTrigger);
 
-            timedAbilities.Add(Petrifaction);
+            CursedShriekTrigger.match = new Regex("(?<member>[^ ]+?) [^ ]+ suffers the effect of Cursed Shriek");
+            CursedShriekTrigger.matchMessage = "Shriek on ${member}";
+            CursedShriekTrigger.warningMessage = "3. 2. 1";
+            CursedShriekTrigger.timerDuration = TimeSpan.FromSeconds(10);
+            CursedShriekTrigger.warningTime = TimeSpan.FromSeconds(3);
+
+
+
+            // Every 24 seconds, although phase transitions will alter
+            TriggeredAbility CursedVoiceTrigger = new TriggeredAbility();
+            timedAbilities.Add(CursedVoiceTrigger);
+
+            CursedVoiceTrigger.match = new Regex("(?<member>[^ ]+?) [^ ]+ suffers the effect of Cursed Voice");
+            CursedVoiceTrigger.matchMessage = "${member.1}, ${member.2}, and ${member.3}";
+
+
+
+            TriggeredAbility CursedVoiceUsed = new TriggeredAbility();
+            timedAbilities.Add(CursedVoiceUsed);
+            CursedVoiceUsed.announceWarning = false;
+            CursedVoiceUsed.match = new Regex(@" readies Cursed Voice\.");
+            CursedVoiceUsed.matchCallback = delegate(Ability self, Match m)
+            {
+                lastVoice = DateTime.Now;
+
+                if (pausedDamage)
+                {
+                    TimeSpan timeSinceRenaud = DateTime.Now - lastRenaud;
+
+                    if (renaudCount >= 4 || timeSinceRenaud < TimeSpan.FromSeconds(20))
+                    {
+                        pausedDamage = false;
+                        tts("Continue damage");
+                    }
+                }
+            };
+
+
+
+
+            TriggeredAbility firstDamagePause = new TriggeredAbility();
+            timedAbilities.Add(firstDamagePause);
+            firstDamagePause.healthTriggerAt = 84;
+            firstDamagePause.healthCallback = delegate(Ability self)
+            {
+                checkStopDamage();
+            };
+
+            TriggeredAbility secondDamagePause = new TriggeredAbility();
+            timedAbilities.Add(secondDamagePause);
+            secondDamagePause.healthTriggerAt = 64;
+            secondDamagePause.healthCallback = delegate(Ability self)
+            {
+                checkStopDamage();
+            };
+
+            TriggeredAbility thirdDamagePause = new TriggeredAbility();
+            timedAbilities.Add(thirdDamagePause);
+            thirdDamagePause.healthTriggerAt = 39;
+            thirdDamagePause.healthCallback = delegate(Ability self)
+            {
+                checkStopDamage();
+            };
 
 
             phases[1] = new Phase();
-
-
 
 
         }
@@ -59,6 +112,9 @@ namespace MelusineNS
 
             if (mob.Name.Contains("Renaud"))
             {
+                renaudCount++;
+                lastRenaud = DateTime.Now;
+
                 tts("Renaud");
             }
             if (mob.Name.Contains("Lamia Prosector"))
@@ -84,15 +140,47 @@ namespace MelusineNS
         }
 
 
+        public void checkStopDamage()
+        {
+            TimeSpan timeSinceVoice = DateTime.Now - lastVoice;
+            TimeSpan timeSinceRenaud = DateTime.Now - lastRenaud;
+
+            if (timeSinceVoice < timeSinceRenaud && timeSinceRenaud < TimeSpan.FromSeconds(20) && timeSinceVoice < TimeSpan.FromSeconds(5))
+            {
+                // Timing is close enough, don't need to pause DPS
+            }
+            else
+            {
+                if (renaudCount < 4)
+                {
+                    pausedDamage = true;
+                    tts("Stop damage");
+                }
+                else
+                {
+                    // if we already have 4 renauds stacked, just test for voice
+                    if (timeSinceVoice > TimeSpan.FromSeconds(5))
+                    {
+                        pausedDamage = true;
+                        tts("Stop damage");
+                    }
+                }
+            }
+        }
+
+        public void onMobRemoved(ActorEntity mob)
+        {
+            if (mob.Name.Contains("Renaud"))
+            {
+                renaudCount--;
+            }
+        }
+
         public void onEndEncounter()
         {
 
         }
 
-        public void onMobRemoved(ActorEntity mob)
-        {
-
-        }
 
         public void onNewChatLine(string line)
         {
@@ -100,6 +188,18 @@ namespace MelusineNS
         }
 
         public void onTick()
+        {
+
+        }
+
+
+        public void onMobAgro(ActorEntity mob)
+        {
+
+        }
+
+
+        public void onAgroRemoved(ActorEntity mob)
         {
 
         }

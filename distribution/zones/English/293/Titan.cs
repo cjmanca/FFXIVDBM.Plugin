@@ -194,5 +194,17 @@ namespace TitanNS
         {
 
         }
+
+
+        public void onMobAgro(ActorEntity mob)
+        {
+
+        }
+
+
+        public void onAgroRemoved(ActorEntity mob)
+        {
+
+        }
     }
 }

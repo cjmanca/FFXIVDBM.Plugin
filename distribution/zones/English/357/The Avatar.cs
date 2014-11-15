@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -208,32 +208,32 @@ namespace TheAvatarEncounter
 
             RotationAbility Brainjack = new RotationAbility(); // Homing Missile
             Brainjack.announceWarning = true;
-            Brainjack.match = new Regex(" readies Brainjack");
+            Brainjack.match = new Regex("The Avatar readies Brainjack");
             Brainjack.warningMessage = "Brain jack";
 
 
             RotationAbility HomingMissile = new RotationAbility(); // Homing Missile
             HomingMissile.announceWarning = true;
-            HomingMissile.match = new Regex(" uses Homing Missile");
+            HomingMissile.match = new Regex("The Avatar uses Homing Missile");
             HomingMissile.warningMessage = "Homing Missile";
             HomingMissile.warningTime = TimeSpan.FromSeconds(5);
 
 
             RotationAbility GaseousBomb = new RotationAbility(); // Gaseous Bomb
             GaseousBomb.announceWarning = false;
-            GaseousBomb.match = new Regex(" uses Gaseous Bomb");
+            GaseousBomb.match = new Regex("The Avatar uses Gaseous Bomb");
             GaseousBomb.warningMessage = "Gaseous";
 
 
             RotationAbility InertiaStream = new RotationAbility(); // Inertia Stream
             InertiaStream.announceWarning = true;
-            InertiaStream.match = new Regex(" uses Inertia Stream");
+            InertiaStream.match = new Regex("The Avatar uses Inertia Stream");
             InertiaStream.warningMessage = "Gather for circles";
 
 
             RotationAbility BallisticMissile = new RotationAbility(); // Ballistic Missile
             BallisticMissile.announceWarning = false;
-            BallisticMissile.match = new Regex(" readies Ballistic Missile");
+            BallisticMissile.match = new Regex("The Avatar readies Ballistic Missile");
             BallisticMissile.warningMessage = "Ballistic Missile";
 
 
@@ -251,7 +251,7 @@ namespace TheAvatarEncounter
             // This is just a placeholder. Rotation can watch for it to make sure the timing is right.
             RotationAbility AllaganField = new RotationAbility();
             AllaganField.announceWarning = false;
-            AllaganField.match = new Regex(" uses Allagan Field");
+            AllaganField.match = new Regex("The Avatar uses Allagan Field");
             AllaganField.warningMessage = "";
 
 
@@ -351,7 +351,7 @@ namespace TheAvatarEncounter
             // maybe add in other logic for the phase switch someday, but I've never heard of anyone not phase swapping at this point
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), NextPhase);
 
-            phases[phaseNum].phaseEndRegex = new Regex(" uses Inertia Stream");
+            phases[phaseNum].phaseEndRegex = new Regex("The Avatar uses Inertia Stream");
 
 
             phaseNum = 2;
@@ -407,7 +407,7 @@ namespace TheAvatarEncounter
             //phases[phaseNum].AddRotation(TimeSpan.FromSeconds(5), NextPhase);      // 19:52:15.835
 
 
-            phases[phaseNum].phaseEndRegex = new Regex(" readies Allagan Field");
+            phases[phaseNum].phaseEndRegex = new Regex("The Avatar readies Allagan Field");
 
 
             phaseNum = 3;
@@ -804,5 +804,17 @@ namespace TheAvatarEncounter
         }
 
 
+
+
+        public void onMobAgro(ActorEntity mob)
+        {
+
+        }
+
+
+        public void onAgroRemoved(ActorEntity mob)
+        {
+
+        }
     }
 }

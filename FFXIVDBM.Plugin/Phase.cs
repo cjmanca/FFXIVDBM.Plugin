@@ -18,6 +18,7 @@ namespace FFXIVDBM.Plugin
 
         public double phaseEndHP = -1;
         public Regex phaseEndRegex = null;
+        public TriggeredAbility onPhaseStart = null;
 
 
 

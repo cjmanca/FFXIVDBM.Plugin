@@ -1,7 +1,7 @@
 {
     "PluginInfo": {
         "Name": "FFXIVDBM.Plugin",
-        "Version": "1.0.5383.25844",
+        "Version": "1.0.5431.29354",
         "Files": [
             {
                 "Name": "FFXIVDBM.Plugin.dll",
@@ -37,6 +37,10 @@
             },
             {
                 "Name": "EncounterScripts.vshost.exe",
+                "Location": "zones/bin/Debug"
+            },
+            {
+                "Name": "EncounterScripts.vshost.exe.manifest",
                 "Location": "zones/bin/Debug"
             },
             {

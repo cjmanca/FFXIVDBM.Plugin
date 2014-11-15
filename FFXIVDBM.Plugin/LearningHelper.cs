@@ -637,41 +637,39 @@ namespace EncounterNS
             output += "            //phases[phaseNum].phaseEndRegex = new Regex(\"Titan uses Geocrush\");" + Environment.NewLine;
             output += "            " + Environment.NewLine;
 
-
-
-
-            output += "        }" + Environment.NewLine;
-            output += "    }" + Environment.NewLine;
-
+            
             output += @"
-            public void onEndEncounter()
-            {
 
-            }
+        }
 
-            public void onMobAdded(ActorEntity mob)
-            {
 
-            }
+        public void onEndEncounter()
+        {
 
-            public void onMobRemoved(ActorEntity mob)
-            {
+        }
 
-            }
+        public void onMobAdded(ActorEntity mob)
+        {
 
-            public void onNewChatLine(string line)
-            {
+        }
 
-            }
+        public void onMobRemoved(ActorEntity mob)
+        {
 
-            public void onTick()
-            {
+        }
 
-            }
+        public void onNewChatLine(string line)
+        {
+
+        }
+
+        public void onTick()
+        {
+
+        }
+    }
+}
 ";
-
-            output += "}" + Environment.NewLine;
-
             string basepath = EncounterController.encounterZonePath + "\\Auto Helper\\" + safeBossName;
             int num = 1;
 
@@ -687,9 +685,9 @@ namespace EncounterNS
 
 
 
-        public void onMobAdded(ActorEntity mob)
+        public void onMobAgro(ActorEntity mob)
         {
-            if (mob.HPMax > bossHealth)
+            if (mob.HPMax > bossHealth && !EncounterController.ignoreMobs.Contains(mob.Name))
             {
                 bossName = mob.Name;
                 bossHealth = mob.HPMax;
@@ -713,6 +711,7 @@ namespace EncounterNS
             string otherTarget = "";
             string regexLogLine = "";
             bool hasTarget = false;
+            bool uses = false;
             
 
 
@@ -720,7 +719,7 @@ namespace EncounterNS
 
             if (m.Success)
             {
-                bool uses = m.Groups["uses"].Value == "uses";
+                uses = m.Groups["uses"].Value == "uses";
                 name = m.Groups["name"].Value;
                 ability = m.Groups["ability"].Value;
 
@@ -863,7 +862,14 @@ namespace EncounterNS
             lineDetails tmpLine = new lineDetails();
 
             tmpLine.ability = abilityList[name][ability];
-            tmpLine.bossHPPct = ((double)bossEntity.HPPercent)*100.0d;
+            try
+            {
+                tmpLine.bossHPPct = ((double)bossEntity.HPPercent) * 100.0d;
+            }
+            catch
+            {
+                debug("LearningHelper bossEntity is null");
+            }
             tmpLine.logLine = line;
             tmpLine.logTime = DateTime.Now;
             tmpLine.mobName = name;
@@ -872,11 +878,23 @@ namespace EncounterNS
 
             abilityTimedOrder[name].Add(tmpLine);
             abilityTimedOrderAll.Add(tmpLine);
-
+                
             
         }
 
+        public void onMobAdded(ActorEntity mob)
+        {
 
+        }
+
+
+        public void onAgroRemoved(ActorEntity mob)
+        {
+
+        }
+
+
+        #region utility
         private int getInsertID()
         {
             int insertID = 0;
@@ -1112,6 +1130,8 @@ namespace EncounterNS
             analyzeAndUpdateAbilityUsesTable();
             analyzeAndUpdateAbilitiesTable();
         }
+
+        #endregion
 
 
     }

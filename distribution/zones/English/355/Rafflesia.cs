@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -34,7 +34,7 @@ namespace RafflesiaNS
 
             TriggeredAbility LeafstormTriggered = new TriggeredAbility();
 
-            LeafstormTriggered.match = new Regex(" readies Leafstorm");
+            LeafstormTriggered.match = new Regex("The rafflesia readies Leafstorm");
             LeafstormTriggered.matchMessage = "Leaf storm";
 
             timedAbilities.Add(LeafstormTriggered);
@@ -43,7 +43,7 @@ namespace RafflesiaNS
 
             TriggeredAbility Blighted = new TriggeredAbility();
 
-            Blighted.match = new Regex(" readies Blighted Bouquet");
+            Blighted.match = new Regex("The rafflesia readies Blighted Bouquet");
             Blighted.matchMessage = "Stay still";
 
             timedAbilities.Add(Blighted);
@@ -53,7 +53,7 @@ namespace RafflesiaNS
             /*
             TriggeredAbility SwarmTriggered = new TriggeredAbility();
 
-            SwarmTriggered.match = new Regex(" readies Swarm\\.");
+            SwarmTriggered.match = new Regex("The rafflesia readies Swarm\\.");
             SwarmTriggered.warningMessage = "Swarm soon";
             SwarmTriggered.timerDuration = TimeSpan.FromSeconds(24);
             SwarmTriggered.warningTime = TimeSpan.FromSeconds(0);
@@ -262,6 +262,18 @@ namespace RafflesiaNS
         }
 
         public void onTick()
+        {
+
+        }
+
+
+        public void onMobAgro(ActorEntity mob)
+        {
+
+        }
+
+
+        public void onAgroRemoved(ActorEntity mob)
         {
 
         }

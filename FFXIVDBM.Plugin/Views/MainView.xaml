@@ -7,7 +7,7 @@
              xmlns:ViewModels="clr-namespace:FFXIVDBM.Plugin.ViewModels"
              xmlns:Sample="clr-namespace:FFXIVDBM.Plugin"
              xmlns:Properties="clr-namespace:FFXIVDBM.Plugin.Properties"
-             d:DesignHeight="300"
+             d:DesignHeight="370"
              d:DesignWidth="300"
              mc:Ignorable="d">
 
@@ -28,7 +28,7 @@
             <TabControl>
                 <TabItem Header="{Binding Locale[sample_ChatLogTabHeader],
                                           Source={StaticResource PluginViewModel}}">
-                    <Controls:xFlowDocument x:Name="ChatLogFD" />
+                    <Controls:xFlowDocument x:Name="ChatLogFD" Height="600" />
                 </TabItem>
             </TabControl>
         </StackPanel>

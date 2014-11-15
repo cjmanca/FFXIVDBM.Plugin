@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,8 +21,6 @@ namespace NaelDeusDarnusNS
             // bossName is needed if you want health based phase swaps
             bossName = "Nael Deus Darnus";
 
-
-            tts("start");
 
             // Triggered abilities
 
@@ -170,12 +168,12 @@ namespace NaelDeusDarnusNS
 
             RotationAbility BahamutsFavor = new RotationAbility();
             BahamutsFavor.announceWarning = false;
-            BahamutsFavor.match = new Regex(@" uses Bahamut's Favor\.");
+            BahamutsFavor.match = new Regex(@"Nael Deus Darnus uses Bahamut's Favor\.");
             BahamutsFavor.warningMessage = "Bahamut's Favor";
 
             RotationAbility BahamutsClaw = new RotationAbility();
             BahamutsClaw.announceWarning = false;
-            BahamutsClaw.match = new Regex(@" uses Bahamut's Claw\.");
+            BahamutsClaw.match = new Regex(@"Nael Deus Darnus uses Bahamut's Claw\.");
             BahamutsClaw.warningMessage = "Bahamut's Claw";
 
             RotationAbility FireTetherOut = new RotationAbility();
@@ -232,10 +230,6 @@ namespace NaelDeusDarnusNS
                 foreach (ActorEntity mob in mobList)
                 {
                     output += Environment.NewLine + "Mob: " + mob.Name + " (" + mob.Coordinate.X + ", " + mob.Coordinate.Y + ", " + mob.Coordinate.Z + ")";
-                }
-                foreach (ActorEntity mob in npcList)
-                {
-                    output += Environment.NewLine + "NPC: " + mob.Name + " (" + mob.Coordinate.X + ", " + mob.Coordinate.Y + ", " + mob.Coordinate.Z + ")";
                 }
                 foreach (ActorEntity mob in pcEntities)
                 {
@@ -378,14 +372,13 @@ namespace NaelDeusDarnusNS
 
             phaseNum = 2;
             phases[phaseNum] = new Phase();
-            phases[phaseNum].phaseEndRegex = new Regex(" uses Megaflare");
+            phases[phaseNum].phaseEndRegex = new Regex("Nael deus Darnus uses Megaflare");
             // Golems
-
 
 
             phaseNum = 3;
             phases[phaseNum] = new Phase();
-            phases[phaseNum].phaseEndRegex = new Regex(" uses Bahamut's Favor");
+            phases[phaseNum].phaseEndRegex = new Regex("Nael deus Darnus uses Bahamut's Favor");
             // Heavenfall/ghosts
             // Start @ 6:06
 
@@ -447,16 +440,50 @@ namespace NaelDeusDarnusNS
 
         public void onMobAdded(ActorEntity mob)
         {
-            if (mob.Name.Contains("Ghost of Meracydia"))
+            if (mob.Name.Contains("The Ghost Of Meracydia"))
             {
                 tts("Add");
             }
+        }
+        
+        public void onAgroRemoved(ActorEntity mob)
+        {
+
+            if (mob.Name.Contains("The Ghost Of Meracydia"))
+            {
+                bool found = false;
+                foreach (PartyEntity player in partyList)
+                {
+                    try
+                    {
+                        debug("player: " + player.Name);
+                        foreach (StatusEntry status in player.StatusEntries)
+                        {
+                            try
+                            {
+                                debug("player: " + player.Name + " - " + status.StatusName);
+                                if (status.StatusName.Contains("Garrote Twist"))
+                                {
+                                    found = true;
+                                    tts(player.Name);
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                    catch { }
+                }
+                if (found)
+                {
+                    tts("to white circles");
+                }
+            }
+            
         }
 
 
         public void onEndEncounter()
         {
-            tts("End");
 
         }
 
@@ -474,5 +501,12 @@ namespace NaelDeusDarnusNS
         {
 
         }
+
+
+        public void onMobAgro(ActorEntity mob)
+        {
+
+        }
+
     }
 }

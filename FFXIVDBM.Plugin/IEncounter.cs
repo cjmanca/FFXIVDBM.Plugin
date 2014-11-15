@@ -14,6 +14,8 @@ namespace FFXIVDBM.Plugin
         void onEndEncounter();
         void onMobAdded(ActorEntity mob);
         void onMobRemoved(ActorEntity mob);
+        void onMobAgro(ActorEntity mob);
+        void onAgroRemoved(ActorEntity mob);
         void onTick();
         void onNewChatLine(string line);
 

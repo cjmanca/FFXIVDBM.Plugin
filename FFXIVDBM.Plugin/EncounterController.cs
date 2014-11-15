@@ -163,6 +163,7 @@ namespace FFXIVDBM.Plugin
         private static IEncounter implementationClass = null;
         private static IEncounter learningHelperClass = null;
 
+        private static List<ActorEntity> _mobCached = null;
         private static List<EnmityEntry> _enmityCached = null;
         private static System.Timers.Timer tickTimer = null;
         private static System.Timers.Timer enmityTimer = null;
@@ -214,9 +215,19 @@ namespace FFXIVDBM.Plugin
         private static Regex testString = null;
         private static Regex endString = null;
 
+        public static List<string> ignoreMobs;
 
         static bool inUpdate = false;
         static bool inTick = false;
+        static bool setupDone = false;
+
+        static int handleRemoveEntry = 0;
+        static string handleRemoveEntryName = "";
+
+        static object tickLock = new object();
+        static object updateLock = new object();
+        static object accessControl = new object();
+
 
         public static void initialize()
         {
@@ -229,6 +240,7 @@ namespace FFXIVDBM.Plugin
 
                 _enmityCached = new List<EnmityEntry>();
                 _agroList = new List<ActorEntity>();
+                _mobCached = new List<ActorEntity>();
 
 
 
@@ -283,7 +295,6 @@ namespace FFXIVDBM.Plugin
             }
         }
 
-        static bool setupDone = false;
         static void trySetup()
         {
             if (Constants.GameLanguage == null)
@@ -351,6 +362,7 @@ namespace FFXIVDBM.Plugin
                     EncounterController.errorLevel = DBMErrorLevel.EncounterInfo;
                 }
 
+
                 debug("DBM Ready, speech volume: " + speechVolume);
 
             }
@@ -361,9 +373,350 @@ namespace FFXIVDBM.Plugin
             setupDone = true;
         }
 
-        static object updateLock = new object();
 
-        static object accessControl = new object();
+        static void checkForNewAgro()
+        {
+            List<uint> diff = null;
+
+            try
+            {
+                // Check for new entries in the enmity list
+                diff = playerEntity.EnmityEntries.Select(x => x.ID).Except(_enmityCached.Select(y => y.ID)).ToList();
+
+                if (diff.Any())
+                {
+                    // loop through the new enmity entries
+                    diff.ForEach(delegate(uint ID)
+                    {
+                        // get the actual ActorEntity object for this enmity entry
+                        IEnumerable<ActorEntity> tmp = mobList.Where(x => x.ID == ID);
+
+                        if (tmp.Any())
+                        {
+                            ActorEntity currentEntity = tmp.First();
+                            if (currentEntity != null && currentEntity.IsValid && currentEntity.HPCurrent > 0 && currentEntity.ClaimedByID != 0 && currentEntity.ClaimedByID < 0xE0000000)
+                            {
+                                if (!_agroList.Any() && implementationClass == null && learningHelperClass == null)
+                                {
+                                    // This is the first enmity entry we found. Start the encounter timer.
+                                    started = DateTime.Now;
+                                }
+
+                                // make sure it's our own copy so it won't mysteriously disappear or change without our knowledge
+                                currentEntity = cloneActorEntity(currentEntity);
+
+                                _agroList.Add(currentEntity);
+
+
+                                if (implementationClass != null)
+                                {
+                                    // send the new mobs to the encounter script
+                                    try
+                                    {
+                                        debug("Agroed Mob: " + currentEntity.Name, DBMErrorLevel.Trace);
+                                        implementationClass.onMobAgro(currentEntity);
+                                    }
+                                    catch (Exception e2)
+                                    {
+                                        debug("onMobAgro", getEngineVsEncounter(implementationClass), e2);
+                                    }
+                                    try
+                                    {
+                                        implementationClass.bossCheck(currentEntity);
+                                    }
+                                    catch (Exception e2)
+                                    {
+                                        debug("bossCheck", getEngineVsEncounter(implementationClass), e2);
+                                    }
+
+                                }
+                                else
+                                {
+                                    // No encounter script loaded. Lets see if we have one that matches this mob
+                                    Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+                                    string mobName = rgx.Replace(currentEntity.Name, "");
+
+                                    string dir = getZoneDirectory();
+
+                                    if (useTestEncounter)
+                                    {
+                                        IEncounter inst = (IEncounter)(new TestEncounter());
+                                        implementationClass = inst;
+
+                                        setupNewClass(inst);
+
+
+                                        debug("TestEncounter started", DBMErrorLevel.Trace);
+                                        debug("Agroed Mob: " + currentEntity.Name, DBMErrorLevel.Trace);
+                                    }
+                                    else
+                                    {
+                                        if (File.Exists(dir + @"\" + mobName + ".cs"))
+                                        {
+                                            // Found one, lets load the script
+                                            loadClassFile(dir + @"\" + mobName + ".cs");
+                                            debug("Agroed Mob: " + currentEntity.Name, DBMErrorLevel.Trace);
+                                        }
+                                    }
+                                }
+
+
+                                if (learningHelperClass != null)
+                                {
+                                    // send the new mobs to the learning helper
+                                    try
+                                    {
+                                        learningHelperClass.onMobAgro(currentEntity);
+                                    }
+                                    catch (Exception e2)
+                                    {
+                                        debug("learningHelper onMobAgro", getEngineVsEncounter(learningHelperClass), e2);
+                                    }
+                                    try
+                                    {
+                                        learningHelperClass.bossCheck(currentEntity);
+                                    }
+                                    catch (Exception e2)
+                                    {
+                                        debug("learningHelper bossCheck", getEngineVsEncounter(learningHelperClass), e2);
+                                    }
+                                }
+                                else
+                                {
+                                    refreshIgnoreMobsList();
+
+                                    // Start learning helper for a new encounter
+                                    LearningHelper abc = new LearningHelper();
+                                    setupNewClass((IEncounter)abc);
+                                    learningHelperClass = abc;
+                                    debug("LearningHelper started (" + currentEntity.Name + ")", DBMErrorLevel.Trace);
+                                }
+
+                            }
+                        }
+                    });
+                }
+            }
+            catch (Exception e2)
+            {
+                debug("updateData check for new agro", DBMErrorLevel.EngineErrors, e2);
+            }
+        }
+
+        static void checkForNewMobs()
+        {
+            try
+            {
+
+                // Check for new entries in the mob list
+                
+                //var anonDiff = mobList.Select(i => new { NPCID1 = i.NPCID1, NPCID2 = i.NPCID2 }).Except(_mobCached.Select(y => new { NPCID1 = y.NPCID1, NPCID2 = y.NPCID2 })).ToList();
+                List<uint> anonDiff = mobList.Select(i => i.ID).Except(_mobCached.Select(y => y.ID)).ToList();
+
+
+                if (anonDiff.Any())
+                {
+                    // loop through the new mob entries
+                    foreach (var ID in anonDiff)
+                    {
+                        // get the actual ActorEntity object for this mob entry
+                        //IEnumerable<ActorEntity> currentEntityIEnum = mobList.Where(x => x.NPCID1 == ID.NPCID1 && x.NPCID2 == ID.NPCID2);
+                        IEnumerable<ActorEntity> currentEntityIEnum = mobList.Where(x => x.ID == ID);
+
+                        if (currentEntityIEnum.Any())
+                        {
+                            ActorEntity currentEntity = currentEntityIEnum.First();
+                            if (currentEntity != null && currentEntity.IsValid && currentEntity.HPCurrent > 0)
+                            {
+                                // make sure it's our own copy so it won't mysteriously disappear or change without our knowledge
+                                currentEntity = cloneActorEntity(currentEntity);
+
+                                _mobCached.Add(currentEntity);
+
+                                if (learningHelperClass != null)
+                                {
+                                    // send the new mobs to the learning helper
+                                    try
+                                    {
+                                        learningHelperClass.onMobAdded(currentEntity);
+                                    }
+                                    catch (Exception e2)
+                                    {
+                                        debug("learningHelper onMobAdded", getEngineVsEncounter(learningHelperClass), e2);
+                                    }
+                                }
+
+                                if (implementationClass != null)
+                                {
+                                    // send the new mobs to the encounter script
+                                    try
+                                    {
+                                        debug("Added Mob: " + currentEntity.Name + " ID: " + currentEntity.ID + " NPCID1: " + currentEntity.NPCID1 + " NPCID2: " + currentEntity.NPCID2, DBMErrorLevel.Trace);
+                                        implementationClass.onMobAdded(currentEntity);
+                                    }
+                                    catch (Exception e2)
+                                    {
+                                        debug("onMobAdded", getEngineVsEncounter(implementationClass), e2);
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e2)
+            {
+                debug("updateData check for new mobs", DBMErrorLevel.EngineErrors, e2);
+            }
+        }
+
+        static void checkForRemovedMobs()
+        {
+            try
+            {
+                // Duplicate the list first before looping through it, or we'll get exceptions when we try to remove entries from the original list
+                List<ActorEntity> tmpList = _mobCached.ToList();
+
+                tmpList.ForEach(delegate(ActorEntity cachedEntity)
+                {
+                    handleRemoveEntryName = cachedEntity.Name;
+                    //IEnumerable<ActorEntity> enumTmpEnt = _mobList.Where(x => x.NPCID1 == cachedEntity.NPCID1 && x.NPCID2 == cachedEntity.NPCID2);
+                    IEnumerable<ActorEntity> enumTmpEnt = mobList.Where(x => x.ID == cachedEntity.ID);
+
+                    if (!enumTmpEnt.Any())
+                    {
+                        handleRemoveEntry = 1;
+                        handleRemove(cachedEntity, null);
+                    }
+                    else
+                    {
+                        ActorEntity currentEntity = enumTmpEnt.First();
+                        if (currentEntity == null)
+                        {
+                            handleRemoveEntry = 2;
+                            handleRemove(cachedEntity, currentEntity);
+                        }
+                        else
+                        {
+                            if (!currentEntity.IsValid)
+                            {
+                                handleRemoveEntry = 3;
+                                handleRemove(cachedEntity, currentEntity);
+                            }
+                            else
+                            {
+                                // remove if dead
+                                if (currentEntity.HPCurrent <= 0)
+                                {
+                                    handleRemoveEntry = 5;
+                                    handleRemove(cachedEntity, currentEntity);
+                                }
+                                else
+                                {
+                                    // update our copy with the new info
+                                    copyActorEntity(currentEntity, ref cachedEntity);
+                                }
+                            }
+                        }
+                    }
+                    handleRemoveEntry = 0;
+                    handleRemoveEntryName = "";
+                });
+
+
+
+            }
+            catch (Exception e2)
+            {
+                debug("updateData check mob removal", DBMErrorLevel.EngineErrors, e2);
+            }
+
+        }
+
+        static void checkForRemovedAgro()
+        {
+            List<uint> newEnmityList = playerEntity.EnmityEntries.Select(x => x.ID).ToList();
+
+            try
+            {
+                // Duplicate the list first before looping through it, or we'll get exceptions when we try to remove entries from the original list
+                List<ActorEntity> tmpList = _agroList.ToList();
+
+                tmpList.ForEach(delegate(ActorEntity cachedEntity)
+                {
+                    handleRemoveEntryName = cachedEntity.Name;
+                    //IEnumerable<ActorEntity> enumTmpEnt = _mobList.Where(x => x.NPCID1 == cachedEntity.NPCID1 && x.NPCID2 == cachedEntity.NPCID2);
+                    IEnumerable<ActorEntity> enumTmpEnt = _mobList.Where(x => x.ID == cachedEntity.ID);
+                    if (!enumTmpEnt.Any())
+                    {
+                        handleRemoveEntry = 1;
+                        handleRemoveAgro(cachedEntity, null);
+                    }
+                    else
+                    {
+                        ActorEntity currentEntity = enumTmpEnt.First();
+                        if (currentEntity == null)
+                        {
+                            handleRemoveEntry = 2;
+                            handleRemoveAgro(cachedEntity, currentEntity);
+                        }
+                        else
+                        {
+                            if (!currentEntity.IsValid)
+                            {
+                                handleRemoveEntry = 3;
+                                handleRemoveAgro(cachedEntity, currentEntity);
+                            }
+                            else
+                            {
+                                if (currentEntity.ClaimedByID == 0 || currentEntity.ClaimedByID >= 0xE0000000)
+                                //if ((!tmpActor.IsClaimed && tmpActor.ClaimedByID == 0))
+                                {
+                                    handleRemoveEntry = 4;
+                                    handleRemoveAgro(cachedEntity, currentEntity);
+                                }
+                                else
+                                {
+                                    // remove if dead
+                                    if (currentEntity.HPCurrent <= 0)
+                                    {
+                                        handleRemoveEntry = 5;
+                                        handleRemoveAgro(cachedEntity, currentEntity);
+                                    }
+                                    else
+                                    {
+                                        // ClaimedByID seems unreliable sometimes, and IsClaimed never seems to work,
+                                        // so instead, check to see if the mob is full health but NOT in the agroList anymore
+                                        // Also make sure we're alive, since the agro list is temporarily empty when dead.
+                                        if (!newEnmityList.Contains(currentEntity.ID) && currentEntity.HPCurrent >= currentEntity.HPMax && CurrentUser.HPCurrent > 0)
+                                        {
+                                            handleRemoveEntry = 6;
+                                            handleRemoveAgro(cachedEntity, currentEntity);
+                                        }
+                                        else
+                                        {
+                                            // update our copy with the new info
+                                            copyActorEntity(currentEntity, ref cachedEntity);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    handleRemoveEntry = 0;
+                    handleRemoveEntryName = "";
+                });
+
+
+
+            }
+            catch (Exception e2)
+            {
+                debug("updateData check agro mob removal", DBMErrorLevel.EngineErrors, e2);
+            }
+
+        }
 
         static void updateData(object sender, ElapsedEventArgs e)
         {
@@ -386,226 +739,25 @@ namespace FFXIVDBM.Plugin
 
             lock (accessControl)
             {
-                try
-                {
-                    // Check for new entries in the enmity list
-                    diff = playerEntity.EnmityEntries.Select(x => x.ID).Except(_enmityCached.Select(y => y.ID)).ToList();
 
-                    if (diff.Any())
-                    {
-                        // loop through the new enmity entries
-                        diff.ForEach(delegate(uint ID)
-                        {
-                            // get the actual ActorEntity object for this enmity entry
-                            IEnumerable<ActorEntity> tmp = mobList.Where(x => x.ID == ID);
-
-                            if (tmp.Any())
-                            {
-                                ActorEntity tmpEnt = tmp.First();
-                                if (tmpEnt != null)
-                                {
-                                    if (!_agroList.Any() && implementationClass == null && learningHelperClass == null)
-                                    {
-                                        // This is the first enmity entry we found. Start the encounter timer.
-                                        started = DateTime.Now;
-                                    }
-
-                                    // make sure it's our own copy so it won't mysteriously disappear or change without our knowledge
-                                    tmpEnt = cloneActorEntity(tmpEnt);
-
-                                    _agroList.Add(tmpEnt);
-
-                                    if (learningHelperClass != null)
-                                    {
-                                        // send the new mobs to the learning helper
-                                        try
-                                        {
-                                            learningHelperClass.onMobAdded(tmpEnt);
-                                        }
-                                        catch (Exception e2)
-                                        {
-                                            debug("learningHelper onMobAdded", getEngineVsEncounter(learningHelperClass), e2);
-                                        }
-                                        try
-                                        {
-                                            learningHelperClass.bossCheck(tmpEnt);
-                                        }
-                                        catch (Exception e2)
-                                        {
-                                            debug("learningHelper bossCheck", getEngineVsEncounter(learningHelperClass), e2);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // Start learning helper for a new encounter
-                                        LearningHelper abc = new LearningHelper();
-                                        setupNewClass((IEncounter)abc);
-                                        learningHelperClass = abc;
-                                        debug("LearningHelper started (" + tmpEnt.Name + ")", DBMErrorLevel.Trace);
-                                    }
-
-                                    if (implementationClass != null)
-                                    {
-                                        // send the new mobs to the encounter script
-                                        try
-                                        {
-                                            debug("Added Mob: " + tmpEnt.Name, DBMErrorLevel.Trace);
-                                            implementationClass.onMobAdded(tmpEnt);
-                                        }
-                                        catch (Exception e2)
-                                        {
-                                            debug("onMobAdded", getEngineVsEncounter(implementationClass), e2);
-                                        }
-                                        try
-                                        {
-                                            implementationClass.bossCheck(tmpEnt);
-                                        }
-                                        catch (Exception e2)
-                                        {
-                                            debug("bossCheck", getEngineVsEncounter(implementationClass), e2);
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        // No encounter script loaded. Lets see if we have one that matches this mob
-                                        Regex rgx = new Regex("[^a-zA-Z0-9 -]");
-                                        string mobName = rgx.Replace(tmpEnt.Name, "");
-                                        string zoneName = rgx.Replace(zone.English, "");
-
-
-                                        string dir = Constants.BaseDirectory + @"\zones\" + Constants.GameLanguage + @"\" + zone.Index;
-
-                                        encounterZonePath = dir;
-
-
-                                        if (!Directory.Exists(dir))
-                                        {
-                                            Directory.CreateDirectory(dir);
-                                            File.WriteAllText(dir + "\\" + zoneName + ".txt", zone.English);
-                                        }
-
-
-                                        if (useTestEncounter)
-                                        {
-                                            IEncounter inst = (IEncounter)(new TestEncounter());
-                                            setupNewClass(inst);
-
-                                            implementationClass = inst;
-
-                                            debug("TestEncounter started", DBMErrorLevel.Trace);
-                                            debug("Added Mob: " + tmpEnt.Name, DBMErrorLevel.Trace);
-                                        }
-                                        else
-                                        {
-                                            if (File.Exists(dir + @"\" + mobName + ".cs"))
-                                            {
-                                                // Found one, lets load the script
-                                                loadClassFile(dir + @"\" + mobName + ".cs");
-                                                debug("Added Mob: " + tmpEnt.Name, DBMErrorLevel.Trace);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    }
-                }
-                catch (Exception e2)
-                {
-                    debug("updateData check for new agro", DBMErrorLevel.EngineErrors, e2);
-                }
-
-                List<uint> newEnmityList = playerEntity.EnmityEntries.Select(x => x.ID).ToList();
+                checkForNewMobs();
+                checkForNewAgro();
+                checkForRemovedMobs();
+                checkForRemovedAgro();
 
                 try
                 {
-                    // Duplicate the list first before looping through it, or we'll get exceptions when we try to remove entries from the original list
-                    List<ActorEntity> tmpList = _agroList.ToList();
-
-                    tmpList.ForEach(delegate(ActorEntity tmpActor)
-                    {
-                        handleRemoveEntryName = tmpActor.Name;
-                        IEnumerable<ActorEntity> enumTmpEnt = _mobList.Where(x => x.NPCID1 == tmpActor.NPCID1 && x.NPCID2 == tmpActor.NPCID2);
-                        if (!enumTmpEnt.Any())
-                        {
-                            handleRemoveEntry = 1;
-                            handleRemove(tmpActor);
-                        }
-                        else
-                        {
-                            ActorEntity tmpEnt = enumTmpEnt.First();
-                            if (tmpEnt == null)
-                            {
-                                handleRemoveEntry = 2;
-                                handleRemove(tmpActor);
-                            }
-                            else
-                            {
-                                if (!tmpActor.IsValid)
-                                {
-                                    handleRemoveEntry = 3;
-                                    handleRemove(tmpActor);
-                                }
-                                else
-                                {
-                                    if (tmpActor.ClaimedByID == 0 || tmpActor.ClaimedByID >= 0xE0000000)
-                                    //if ((!tmpActor.IsClaimed && tmpActor.ClaimedByID == 0))
-                                    {
-                                        handleRemoveEntry = 4;
-                                        handleRemove(tmpActor);
-                                    }
-                                    else
-                                    {
-                                        // remove if dead
-                                        if (tmpActor.HPCurrent <= 0)
-                                        {
-                                            handleRemoveEntry = 5;
-                                            handleRemove(tmpActor);
-                                        }
-                                        else
-                                        {
-                                            // ClaimedByID seems unreliable sometimes, and IsClaimed never seems to work,
-                                            // so instead, check to see if the mob is full health but NOT in the agroList anymore
-                                            // Also make sure we're alive, since the agro list is temporarily empty when dead.
-                                            if (!newEnmityList.Contains(tmpActor.ID) && tmpActor.HPCurrent >= tmpActor.HPMax && CurrentUser.HPCurrent > 0)
-                                            {
-                                                handleRemoveEntry = 6;
-                                                handleRemove(tmpActor);
-                                            }
-                                            else
-                                            {
-                                                // update our copy with the new info
-                                                copyActorEntity(tmpEnt, ref tmpActor);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        handleRemoveEntry = 0;
-                        handleRemoveEntryName = "";
-                    });
-
-
                     // cache the enmity list so we can compare next time to detect changes
                     _enmityCached = playerEntity.EnmityEntries.ToList();
-
                 }
                 catch (Exception e2)
                 {
-                    debug("updateData check mob removal", DBMErrorLevel.EngineErrors, e2);
+                    debug("updateData cache lists", DBMErrorLevel.EngineErrors, e2);
                 }
-
 
             }
             inUpdate = false;
         }
-
-        static int handleRemoveEntry = 0;
-        static string handleRemoveEntryName = "";
-
-        static object tickLock = new object();
 
         static void tickTimerEvent(object sender, ElapsedEventArgs e)
         {
@@ -654,19 +806,17 @@ namespace FFXIVDBM.Plugin
         }
 
 
-
-        public static void handleRemove(ActorEntity pActor)
+        public static void handleRemove(ActorEntity cachedEntity, ActorEntity currentEntity)
         {
-            debug("Removed Mob: " + pActor.Name + " (" + handleRemoveEntry + ", " + (pActor.IsValid ? "valid" : "not valid") + ", " + (pActor.IsClaimed ? "claimed" : "not claimed") + ", by id: " + pActor.ClaimedByID + ")", DBMErrorLevel.Trace);
-
-            _agroList.Remove(pActor);
-
+            //debug("Removed Mob: " + currentEntity.Name + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ", " + (currentEntity.IsClaimed ? "claimed" : "not claimed") + ", by id: " + currentEntity.ClaimedByID + ")", DBMErrorLevel.Trace);
+                                       
+            _mobCached.Remove(cachedEntity);
 
             if (learningHelperClass != null)
             {
                 try
                 {
-                    learningHelperClass.onMobRemoved(pActor);
+                    learningHelperClass.onMobRemoved(cachedEntity);
                 }
                 catch (Exception e2)
                 {
@@ -678,11 +828,56 @@ namespace FFXIVDBM.Plugin
             {
                 try
                 {
-                    implementationClass.onMobRemoved(pActor);
+                    if (currentEntity == null)
+                    {
+                        debug("Removed Mob: " + cachedEntity.Name + " ID: " + cachedEntity.ID + " NPCID1: " + cachedEntity.NPCID1 + " NPCID2: " + cachedEntity.NPCID2 + " (" + handleRemoveEntry + ", null)", DBMErrorLevel.Trace);
+                    }
+                    else
+                    {
+                        debug("Removed Mob: " + currentEntity.Name + " ID: " + currentEntity.ID + " NPCID1: " + currentEntity.NPCID1 + " NPCID2: " + currentEntity.NPCID2 + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ")", DBMErrorLevel.Trace);
+                    }
+                    implementationClass.onMobRemoved(cachedEntity);
                 }
                 catch (Exception e2)
                 {
                     debug("onMobRemoved", getEngineVsEncounter(implementationClass), e2);
+                }
+            }
+        }
+
+        public static void handleRemoveAgro(ActorEntity cachedEntity, ActorEntity currentEntity)
+        {
+            if (currentEntity == null)
+            {
+                debug("Removed Agro: " + cachedEntity.Name + " (" + handleRemoveEntry + ", null)", DBMErrorLevel.Trace);
+            }
+            else
+            {
+                debug("Removed Agro: " + currentEntity.Name + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ", " + (currentEntity.IsClaimed ? "claimed" : "not claimed") + ", by id: " + currentEntity.ClaimedByID + ")", DBMErrorLevel.Trace);
+            }
+            _agroList.Remove(cachedEntity);
+
+            if (learningHelperClass != null)
+            {
+                try
+                {
+                    learningHelperClass.onAgroRemoved(cachedEntity);
+                }
+                catch (Exception e2)
+                {
+                    debug("learningHelper onAgroRemoved", getEngineVsEncounter(learningHelperClass), e2);
+                }
+            }
+
+            if (implementationClass != null)
+            {
+                try
+                {
+                    implementationClass.onAgroRemoved(cachedEntity);
+                }
+                catch (Exception e2)
+                {
+                    debug("onAgroRemoved", getEngineVsEncounter(implementationClass), e2);
                 }
             }
 
@@ -726,6 +921,7 @@ namespace FFXIVDBM.Plugin
             }
             _agroList.Clear();
             _enmityCached.Clear();
+            _mobCached.Clear();
             encounterStarted = false;
         }
 
@@ -750,15 +946,16 @@ namespace FFXIVDBM.Plugin
                 debug("setPhase", getEngineVsEncounter(inst), e2);
             }
 
+
             foreach (ActorEntity tmpEnt in _agroList)
             {
                 try
                 {
-                    inst.onMobAdded(tmpEnt);
+                    inst.onMobAgro(tmpEnt);
                 }
                 catch (Exception e2)
                 {
-                    debug("onMobAdded", getEngineVsEncounter(inst), e2);
+                    debug("onMobAgro", getEngineVsEncounter(inst), e2);
                 }
                 try
                 {
@@ -767,6 +964,22 @@ namespace FFXIVDBM.Plugin
                 catch (Exception e2)
                 {
                     debug("bossCheck", getEngineVsEncounter(inst), e2);
+                }
+            }
+
+            foreach (ActorEntity tmpEnt in _mobCached)
+            {
+                try
+                {
+                    if (inst == implementationClass)
+                    {
+                        debug("Added Mob (Setup): " + tmpEnt.Name + " ID: " + tmpEnt.ID + " NPCID1: " + tmpEnt.NPCID1 + " NPCID2: " + tmpEnt.NPCID2, DBMErrorLevel.Trace);
+                    }
+                    inst.onMobAdded(tmpEnt);
+                }
+                catch (Exception e2)
+                {
+                    debug("onMobAdded", getEngineVsEncounter(inst), e2);
                 }
             }
         }
@@ -809,10 +1022,8 @@ namespace FFXIVDBM.Plugin
                 {
                     foreach (ActorEntity pActor in _agroList)
                     {
-                        debug("Dump Mob: " + pActor.Name + " (" + (pActor.IsValid ? "valid" : "not valid") + ", " + (pActor.IsClaimed ? "claimed" : "not claimed") + ", by id: " + pActor.ClaimedByID + ")", DBMErrorLevel.Trace);
-
                         handleRemoveEntry = 99;
-                        handleRemove(pActor);
+                        handleRemoveAgro(pActor, pActor);
                     }
                 }
 
@@ -888,7 +1099,45 @@ namespace FFXIVDBM.Plugin
 
 
 
+
         #region utility
+
+        public static string getZoneDirectory()
+        {
+            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+            string zoneName = rgx.Replace(zone.English, "");
+
+            string dir = Constants.BaseDirectory + @"\zones\" + Constants.GameLanguage + @"\" + zone.Index;
+
+            encounterZonePath = dir;
+
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+                File.WriteAllText(dir + "\\" + zoneName + ".txt", zone.English);
+            }
+
+            return dir;
+        }
+
+        public static void refreshIgnoreMobsList()
+        {
+            ignoreMobs = new List<string>();
+
+            string ignoreFile = getZoneDirectory() + Path.PathSeparator + "ignore.txt";
+
+            if (File.Exists(ignoreFile))
+            {
+                string[] lines = File.ReadAllLines(ignoreFile);
+                foreach (string line in lines)
+                {
+                    if (line.Trim().Length > 0)
+                    {
+                        ignoreMobs.Add(line.Trim());
+                    }
+                }
+            }
+        }
 
         private static DBMErrorLevel getEngineVsEncounter(IEncounter controller)
         {
@@ -1076,13 +1325,13 @@ namespace FFXIVDBM.Plugin
 
 
 
-        public static ActorEntity cloneActorEntity(ActorEntity tmpEnt)
+        public static ActorEntity cloneActorEntity(ActorEntity toClone)
         {
-            ActorEntity tmpActor = new ActorEntity();
+            ActorEntity newEntity = new ActorEntity();
 
-            copyActorEntity(tmpEnt, ref tmpActor);
+            copyActorEntity(toClone, ref newEntity);
 
-            return tmpActor;
+            return newEntity;
         }
 
         public static void copyActorEntity(ActorEntity fromEntity, ref ActorEntity toEntity)
@@ -1242,8 +1491,8 @@ namespace FFXIVDBM.Plugin
                 }
 
                 IEncounter inst = findEntryPoint(cr.CompiledAssembly);
-                setupNewClass(inst);
                 implementationClass = inst;
+                setupNewClass(inst);
                 debug("Encounter started (" + path + ")", DBMErrorLevel.Trace);
 
                 if (learningHelperClass != null)
@@ -1262,6 +1511,8 @@ namespace FFXIVDBM.Plugin
 
                 try
                 {
+                    refreshIgnoreMobsList();
+
                     // Start learning helper for a new encounter
                     LearningHelper abc = new LearningHelper();
                     setupNewClass((IEncounter)abc);
@@ -1280,7 +1531,6 @@ namespace FFXIVDBM.Plugin
             }
 
         }
-
 
         private static IEncounter findEntryPoint(Assembly assembly)
         {

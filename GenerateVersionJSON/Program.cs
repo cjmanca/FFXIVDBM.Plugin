@@ -45,8 +45,8 @@ namespace GenerateVersionJSON
     }
 }
 ";
-            outFile.Flush();
             outFile.Write(lines);
+            outFile.Flush();
 
             outFile.Close();
             outFile.Dispose();
