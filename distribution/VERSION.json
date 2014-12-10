@@ -1,7 +1,7 @@
 {
     "PluginInfo": {
         "Name": "FFXIVDBM.Plugin",
-        "Version": "1.0.5431.29354",
+        "Version": "1.0.5439.15694",
         "Files": [
             {
                 "Name": "FFXIVDBM.Plugin.dll",
@@ -34,14 +34,6 @@
             {
                 "Name": "EncounterScripts.v12.suo",
                 "Location": "zones"
-            },
-            {
-                "Name": "EncounterScripts.vshost.exe",
-                "Location": "zones/bin/Debug"
-            },
-            {
-                "Name": "EncounterScripts.vshost.exe.manifest",
-                "Location": "zones/bin/Debug"
             },
             {
                 "Name": "The Navel (Hard).txt",
@@ -82,22 +74,6 @@
             {
                 "Name": "Second Coil Of Bahamut - Turn 4.txt",
                 "Location": "zones/English/358"
-            },
-            {
-                "Name": "DesignTimeResolveAssemblyReferencesInput.cache",
-                "Location": "zones/obj/Debug"
-            },
-            {
-                "Name": "TemporaryGeneratedFile_036C0B5B-1481-4323-8D20-8F5ADCB23D92.cs",
-                "Location": "zones/obj/Debug"
-            },
-            {
-                "Name": "TemporaryGeneratedFile_5937a670-0e60-4077-877b-f7221da3dda1.cs",
-                "Location": "zones/obj/Debug"
-            },
-            {
-                "Name": "TemporaryGeneratedFile_E7A71F73-0F8D-4B9B-B56E-8E70B10BC5D3.cs",
-                "Location": "zones/obj/Debug"
             }
         ],
         "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/"
