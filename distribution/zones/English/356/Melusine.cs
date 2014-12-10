@@ -142,6 +142,9 @@ namespace MelusineNS
 
         public void checkStopDamage()
         {
+            // Renaud's are now petrified for 60 seconds, so no need to pause damage on phase changes anymore
+            return;
+
             TimeSpan timeSinceVoice = DateTime.Now - lastVoice;
             TimeSpan timeSinceRenaud = DateTime.Now - lastRenaud;
 

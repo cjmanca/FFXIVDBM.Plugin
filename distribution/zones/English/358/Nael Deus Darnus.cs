@@ -38,7 +38,7 @@ namespace NaelDeusDarnusNS
             // Person with thunderstruck needs to get away from everyone else
             TriggeredAbility ThunderstruckTrigger = new TriggeredAbility();
             ThunderstruckTrigger.match = new Regex(@"(?<member>[^ ]+?) [^ ]* suffers the effect of Thunderstruck\.");
-            ThunderstruckTrigger.matchMessage = "Thunderstruck on ${member}";
+            ThunderstruckTrigger.matchMessage = "${member} Thunder";
 
             timedAbilities.Add(ThunderstruckTrigger);
 
@@ -66,6 +66,12 @@ namespace NaelDeusDarnusNS
 
             timedAbilities.Add(RavenBlightTrigger);
 
+
+            TriggeredAbility GarroteTwist = new TriggeredAbility(); // Garrote Twist
+            GarroteTwist.announceWarning = true;
+            GarroteTwist.match = new Regex(@"(?<member>[^ ]+?) [^ ]* suffers the effect of Garrote Twist");
+            GarroteTwist.matchMessage = @"${member} Twist"; 
+            
 
             // Rotation abilities
 
@@ -119,15 +125,15 @@ namespace NaelDeusDarnusNS
             IronChariot.announceWarning = true;
             IronChariot.match = new Regex(@" readies Iron Chariot\.");
             IronChariot.warningMessage = "Chariot";
-            IronChariot.warningTime = TimeSpan.FromSeconds(5);
+            IronChariot.warningTime = TimeSpan.FromSeconds(7);
 
 
             // Damage is split by all who it hits. Very small range. Need to stack tight on one person (usually in the center of the arena)
             RotationAbility ThermionicBeam = new RotationAbility(); // Inertia Stream
             ThermionicBeam.announceWarning = true;
             ThermionicBeam.match = new Regex(@" uses Thermionic Beam\.");
-            ThermionicBeam.warningMessage = "Gather for thermeonic beam";
-            ThermionicBeam.warningTime = TimeSpan.FromSeconds(8);
+            ThermionicBeam.warningMessage = "Thermeonic";
+            ThermionicBeam.warningTime = TimeSpan.FromSeconds(7);
 
 
             RotationAbility LunarDynamo = new RotationAbility();
@@ -179,16 +185,19 @@ namespace NaelDeusDarnusNS
             RotationAbility FireTetherOut = new RotationAbility();
             FireTetherOut.announceWarning = true;
             FireTetherOut.match = new Regex(@"uses Fire Tether");
-            FireTetherOut.warningMessage = "Run fire away";
-            FireTetherOut.warningTime = TimeSpan.FromSeconds(7);
+            FireTetherOut.warningMessage = "Fire away";
+            FireTetherOut.warningTime = TimeSpan.FromSeconds(9);
 
             RotationAbility FireTetherIn = new RotationAbility();
             FireTetherIn.announceWarning = true;
             FireTetherIn.match = new Regex(@"uses Fire Tether");
-            FireTetherIn.warningMessage = "Gather for fire";
-            FireTetherIn.warningTime = TimeSpan.FromSeconds(5);
+            FireTetherIn.warningMessage = "Fire in";
+            FireTetherIn.warningTime = TimeSpan.FromSeconds(9);
             FireTetherIn.warningCallback = delegate(Ability self)
             {
+                // PartyList seems to be broken currently in FFXIV-APP, so disabling this until it's fixed
+                return;
+
                 string output = "except ";
 
                 foreach (PartyEntity member in partyList)
@@ -216,9 +225,10 @@ namespace NaelDeusDarnusNS
             */
 
             RotationAbility SuperNova = new RotationAbility();
-            SuperNova.announceWarning = true;
+            SuperNova.announceWarning = false;
             SuperNova.match = new Regex(@" uses SuperNova\.");
             SuperNova.warningMessage = "Super Nova";
+            SuperNova.warningTime = TimeSpan.FromSeconds(7);
 
             RotationAbility DoubleDragonDivebombs = new RotationAbility();
             DoubleDragonDivebombs.announceWarning = true;
@@ -382,55 +392,46 @@ namespace NaelDeusDarnusNS
             // Heavenfall/ghosts
             // Start @ 6:06
 
-            //phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), Heavensfall);      // 06:16
+            //phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), Heavensfall); 
 
 
             phaseNum = 4;
             phases[phaseNum] = new Phase();
             // Dragons/soft enrage
 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), BahamutsFavor);      // 07:59
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(3), BahamutsClaw);      // 08:02
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(7), FireTetherOut);      // 08:09
-            //phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), Thunderstruck);      // 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(6), LunarDynamo);      //  08:15
-            //phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), Thunderstruck);      // 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(12), FireTetherIn);      // 08:27
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(11), FireTetherOut);      // 08:38
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(8), IronChariot);      // 08:36
-            //phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), Thunderstruck);      // 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(5), SuperNova);      // 08:41
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(6), ThermionicBeam);      // 08:47
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(4), FireTetherIn);      // 08:51
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2), BahamutsClaw);      // 08:53
-            //phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), Thunderstruck);      // 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(7), DoubleDragonDivebombs);      // 09:00
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(6), SingleDivebomb);      // 09:06
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(3), MeteorStream);      // 09:09
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(7), MeteorStream);      // 09:16
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(4), DalamudDive);      // 09:20
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), BahamutsFavor);     
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(6.5013718), BahamutsClaw);  
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(11.4737135), FireTetherOut); 
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0.7770444), LunarDynamo);   
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(11.1926402), FireTetherIn);  
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(9.8685644), IronChariot);   
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(4.3431341), FireTetherOut);  
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(1.3771931), SuperNova);   
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(6.2523576), ThermionicBeam);  
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2.3321334), FireTetherIn);   
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(4.1582379), BahamutsClaw);     
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(7), DoubleDragonDivebombs);   
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(7.8188476), MeteorStream); 
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(10.3945945), DalamudDive);  
 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(15), BahamutsFavor);      // 09:35
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(4), BahamutsClaw);      // 09:39
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(12), FireTetherOut);      // 09:51
-            //phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), Thunderstruck);      // 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(1), LunarDynamo);      // 09:52
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(11), FireTetherIn);      // 10:03
-            // phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), Thunderstruck);      // 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(10), IronChariot);      // 10:13
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2), FireTetherOut);      // 10:15
-            //phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), Thunderstruck);      // 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(3), SuperNova);      // 10:18
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(5), ThermionicBeam);      // 10:23
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(4), FireTetherIn);      // 10:27
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(3), BahamutsClaw);      // 10:30
-            //phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), Thunderstruck);      // 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(6), DoubleDragonDivebombs);      // 10:36 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(4), IronChariot);      // 10:40
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2), SingleDivebomb);      // 10:42
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(5), RavenDive);      // 10:47
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2), LunarDynamo);      // 10:49
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(19), RotationAbility.Blank());      // 11:08
+
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(12.4797138), BahamutsFavor);  
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(6.2383568), BahamutsClaw);  
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(12.4867142), LunarDynamo);   
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0.0030002), FireTetherOut);  
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(12.2156987), FireTetherIn);  
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(8.8735075), IronChariot);      
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(3.0841764), FireTetherOut); 
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2.0741186), SuperNova);  
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(5.4673128), ThermionicBeam);   
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(4.6742673), FireTetherIn);    
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2.0741186), BahamutsClaw);   
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(7), DoubleDragonDivebombs);  
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(3.9186245), IronChariot);    
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(7.0184015), RavenDive);    
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(1.3000743), LunarDynamo);    
+
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(19.7651305), RotationAbility.Blank());      // 11:08
 
 
 
@@ -448,7 +449,8 @@ namespace NaelDeusDarnusNS
         
         public void onAgroRemoved(ActorEntity mob)
         {
-
+            // PartyList seems to be broken currently in FFXIV-APP, so disabling this until it's fixed
+            return;
             if (mob.Name.Contains("The Ghost Of Meracydia"))
             {
                 bool found = false;
