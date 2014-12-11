@@ -64,6 +64,8 @@ namespace GenerateVersionJSON
                 Console.WriteLine(" friendlyname - The plugin name which will be displayed in the update tab.");
                 Console.WriteLine(" description - The plugin description to be displayed in the update tab.");
                 Console.WriteLine(" url - The base url for the distribution files including a trailing slash.");
+                Console.WriteLine("Example:");
+                Console.WriteLine(@"GenerateVersionJSON.exe Name=""FFXIVDBM.Plugin"" FriendlyName=""Deadly Boss Mods"" Description=""Gives audible warnings for many encounters"" url=""https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/""");
                 return;
             }
 
