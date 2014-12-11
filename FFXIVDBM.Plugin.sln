@@ -4,11 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 12.0.30110.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFXIVDBM.Plugin", "FFXIVDBM.Plugin\FFXIVDBM.Plugin.csproj", "{BDF0777F-306F-464C-A30B-3FAE6CDDF527}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3E41AB0F-490D-42B7-927F-8E993CC29307} = {3E41AB0F-490D-42B7-927F-8E993CC29307}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenerateVersionJSON", "GenerateVersionJSON\GenerateVersionJSON.csproj", "{3E41AB0F-490D-42B7-927F-8E993CC29307}"
-	ProjectSection(ProjectDependencies) = postProject
-		{BDF0777F-306F-464C-A30B-3FAE6CDDF527} = {BDF0777F-306F-464C-A30B-3FAE6CDDF527}
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

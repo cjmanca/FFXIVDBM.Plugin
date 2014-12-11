@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Diagnostics;
+using System.Security.Cryptography;
 
 namespace GenerateVersionJSON
 {
@@ -18,9 +19,53 @@ namespace GenerateVersionJSON
         
         static void Main(string[] args)
         {
-            string mainAssembly = @"FFXIVDBM.Plugin";
-            string updateURL = @"https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/";
+            string mainAssembly = @"";
+            string friendlyName = @"";
+            string description = @"";
+            string updateURL = @"";
 
+
+            foreach (string arg in args)
+            {
+                string command = "";
+                string value = "";
+
+                string[] parts = arg.Split('=');
+
+                if (parts.Length >= 2)
+                {
+                    command = parts[0].Trim();
+                    value = parts[1].Trim('"').Replace('"', '\'');
+
+                    switch (command.ToLowerInvariant())
+                    {
+                        case "name":
+                            mainAssembly = value;
+                            break;
+                        case "friendlyname":
+                            friendlyName = value;
+                            break;
+                        case "description":
+                            description = value;
+                            break;
+                        case "url":
+                            updateURL = value;
+                            break;
+
+                    }
+                }
+            }
+
+            if (!File.Exists(mainAssembly + @".dll"))
+            {
+                Console.WriteLine("Make sure your current working directory is in the distribution base directory.\n");
+                Console.WriteLine("Parameters:");
+                Console.WriteLine(" name - The assembly name, without the extension.");
+                Console.WriteLine(" friendlyname - The plugin name which will be displayed in the update tab.");
+                Console.WriteLine(" description - The plugin description to be displayed in the update tab.");
+                Console.WriteLine(" url - The base url for the distribution files including a trailing slash.");
+                return;
+            }
 
             FileVersionInfo mainAssemblyVersionInfo = FileVersionInfo.GetVersionInfo(mainAssembly + @".dll");
 
@@ -30,6 +75,9 @@ namespace GenerateVersionJSON
     ""PluginInfo"": {
         ""Name"": """ + mainAssembly + @""",
         ""Version"": """ + mainAssemblyVersionInfo.FileVersion + @""",
+        ""FriendlyName"": """ + friendlyName + @""",
+        ""Description"": """ + description + @""",
+        ""SourceURI"": """ + updateURL + @""",
         ""Files"": [";
 
 
@@ -40,8 +88,7 @@ namespace GenerateVersionJSON
 
 
             lines = @"
-        ],
-        ""SourceURI"": """ + updateURL + @"""
+        ]
     }
 }
 ";
@@ -95,7 +142,7 @@ namespace GenerateVersionJSON
                     // where the file has been deleted since the call to TraverseTree().
                     //Console.WriteLine(fi.FullName);
 
-                    if (fi.Name != ignoreAssembly)
+                    if (fi.Name != ignoreAssembly && fi.Name != "VERSION.json")
                     {
                         if (!firstFile)
                         {
@@ -103,10 +150,13 @@ namespace GenerateVersionJSON
                         }
                         firstFile = false;
 
+                        string hash = GetFileHash(fi.DirectoryName + @"\" + fi.Name);
+
                         outFile.Write(@"
             {
                 ""Name"": """ + fi.Name + @""",
-                ""Location"": """ + path + @"""
+                ""Location"": """ + path + @""",
+                ""Checksum"": """ + hash + @"""
             }");
                     }
                 }
@@ -120,6 +170,45 @@ namespace GenerateVersionJSON
                     WalkDirectoryTree(dirInfo, path + @"/" + dirInfo.Name);
                 }
             }
+        }
+
+
+
+        /// <summary>
+        /// Computes a file's checksum
+        /// </summary>
+        /// <param name="FilePath">Path to file</param>
+        /// <returns>MD5 checksum for the file, or an empty string if the file doesn't exist.</returns>
+        static string GetFileHash(string FilePath)
+        {
+            string FileHash = "";
+
+            if (!File.Exists(FilePath))
+            {
+                return FileHash;
+            }
+
+            try
+            {
+                using (FileStream file = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
+                {
+                    using (MD5 md5 = new MD5CryptoServiceProvider())
+                    {
+                        byte[] retVal = md5.ComputeHash(file);
+                        file.Close();
+
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < retVal.Length; i++)
+                        {
+                            sb.Append(retVal[i].ToString("x2"));
+                        }
+                        FileHash = sb.ToString();
+                    }
+                }
+            }
+            catch { }
+
+            return FileHash;
         }
     }
 }

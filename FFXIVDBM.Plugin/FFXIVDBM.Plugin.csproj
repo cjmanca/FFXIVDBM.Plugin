@@ -190,6 +190,8 @@
     <PostBuildEvent>mkdir "$(SolutionDir)\..\Parser\Plugins\$(SolutionName)"
 copy "$(TargetPath)" "$(SolutionDir)\..\Parser\Plugins\$(SolutionName)\"
 if $(ConfigurationName) == Debug copy "$(TargetDir)\*.pdb" "$(SolutionDir)\..\Parser\Plugins\$(SolutionName)\"
+cd "$(SolutionDir)\distribution\"
+GenerateVersionJSON.exe Name="FFXIVDBM.Plugin" FriendlyName="Deadly Boss Mods" Description="Gives audible warnings for many encounters" url="https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/"
 </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

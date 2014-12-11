@@ -1,81 +1,96 @@
 {
     "PluginInfo": {
         "Name": "FFXIVDBM.Plugin",
-        "Version": "1.0.5439.15694",
+        "Version": "1.0.5457.32952",
+        "FriendlyName": "Deadly Boss Mods",
+        "Description": "Gives audible warnings for many encounters",
+        "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/",
         "Files": [
             {
                 "Name": "FFXIVDBM.Plugin.dll",
-                "Location": ""
+                "Location": "",
+                "Checksum": "61b6677a5816459ff7b67db239782c95"
             },
             {
                 "Name": "Logo.png",
-                "Location": ""
+                "Location": "",
+                "Checksum": "3296c842a859ca8327eabbd3b7f5e1de"
             },
             {
                 "Name": "PluginInfo.xml",
-                "Location": ""
-            },
-            {
-                "Name": "VERSION.json",
-                "Location": ""
+                "Location": "",
+                "Checksum": "02fa8bdb49f71cde9b4df27105d698bc"
             },
             {
                 "Name": "EncounterScripts.csproj",
-                "Location": "zones"
+                "Location": "zones",
+                "Checksum": "953ca139ba50bd564334dd21a069701c"
             },
             {
                 "Name": "EncounterScripts.csproj.user",
-                "Location": "zones"
+                "Location": "zones",
+                "Checksum": "e4c67d1f6af34cf29bcce8c80f7a82df"
             },
             {
                 "Name": "EncounterScripts.sln",
-                "Location": "zones"
+                "Location": "zones",
+                "Checksum": "e919938639e66ad99802270436fdf215"
             },
             {
                 "Name": "EncounterScripts.v12.suo",
-                "Location": "zones"
+                "Location": "zones",
+                "Checksum": "b5695491ce6384c0177ce8cb328fcaae"
             },
             {
                 "Name": "The Navel (Hard).txt",
-                "Location": "zones/English/293"
+                "Location": "zones/English/293",
+                "Checksum": "d41d8cd98f00b204e9800998ecf8427e"
             },
             {
                 "Name": "Titan.cs",
-                "Location": "zones/English/293"
+                "Location": "zones/English/293",
+                "Checksum": "71499bd4c20f76fff5d6724f63aea194"
             },
             {
                 "Name": "Rafflesia.cs",
-                "Location": "zones/English/355"
+                "Location": "zones/English/355",
+                "Checksum": "8a47b697fa66eeb04c71a7ed29173bd0"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 1.txt",
-                "Location": "zones/English/355"
+                "Location": "zones/English/355",
+                "Checksum": "e281a393120b90d5cff239a999cd812d"
             },
             {
                 "Name": "Melusine.cs",
-                "Location": "zones/English/356"
+                "Location": "zones/English/356",
+                "Checksum": "90c57a6e4bda5a62f54c2402a1fb5212"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 2.txt",
-                "Location": "zones/English/356"
+                "Location": "zones/English/356",
+                "Checksum": "e281a393120b90d5cff239a999cd812d"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 3.txt",
-                "Location": "zones/English/357"
+                "Location": "zones/English/357",
+                "Checksum": "6a435adee364f0d873190253977440bc"
             },
             {
                 "Name": "The Avatar.cs",
-                "Location": "zones/English/357"
+                "Location": "zones/English/357",
+                "Checksum": "601875aa95a91158e2c7daf314aebb30"
             },
             {
                 "Name": "Nael Deus Darnus.cs",
-                "Location": "zones/English/358"
+                "Location": "zones/English/358",
+                "Checksum": "4fff425bb6305164659f38b07d59fc2e"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 4.txt",
-                "Location": "zones/English/358"
+                "Location": "zones/English/358",
+                "Checksum": "6a435adee364f0d873190253977440bc"
             }
-        ],
-        "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/"
+        ]
     }
 }
