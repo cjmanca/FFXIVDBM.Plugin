@@ -1,7 +1,7 @@
 {
     "PluginInfo": {
         "Name": "FFXIVDBM.Plugin",
-        "Version": "1.0.5457.33265",
+        "Version": "1.0.5458.996",
         "FriendlyName": "Deadly Boss Mods",
         "Description": "Gives audible warnings for many encounters",
         "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/",
@@ -9,7 +9,7 @@
             {
                 "Name": "FFXIVDBM.Plugin.dll",
                 "Location": "",
-                "Checksum": "ef4ac093323bd990053c64d340825eac"
+                "Checksum": "acc58acd56e5e3c59b125ae84189e96f"
             },
             {
                 "Name": "Logo.png",
@@ -22,14 +22,14 @@
                 "Checksum": "02fa8bdb49f71cde9b4df27105d698bc"
             },
             {
+                "Name": "readme.txt",
+                "Location": "",
+                "Checksum": "2463137d6d10662394d9dd90372e6743"
+            },
+            {
                 "Name": "EncounterScripts.csproj",
                 "Location": "zones",
                 "Checksum": "953ca139ba50bd564334dd21a069701c"
-            },
-            {
-                "Name": "EncounterScripts.csproj.user",
-                "Location": "zones",
-                "Checksum": "e4c67d1f6af34cf29bcce8c80f7a82df"
             },
             {
                 "Name": "EncounterScripts.sln",
@@ -37,9 +37,14 @@
                 "Checksum": "e919938639e66ad99802270436fdf215"
             },
             {
-                "Name": "EncounterScripts.v12.suo",
-                "Location": "zones",
-                "Checksum": "b5695491ce6384c0177ce8cb328fcaae"
+                "Name": "Final Coil of Bahamut - Turn 1.txt",
+                "Location": "zones/English/193",
+                "Checksum": "1243a07c78ece63c2d04c1f66a9a4f1f"
+            },
+            {
+                "Name": "Imdugud.cs",
+                "Location": "zones/English/193",
+                "Checksum": "acb61d377a5cee0018c93230c9114194"
             },
             {
                 "Name": "The Navel (Hard).txt",
@@ -49,12 +54,12 @@
             {
                 "Name": "Titan.cs",
                 "Location": "zones/English/293",
-                "Checksum": "71499bd4c20f76fff5d6724f63aea194"
+                "Checksum": "312838aa672843575e3ce8d795bb2f2b"
             },
             {
                 "Name": "Rafflesia.cs",
                 "Location": "zones/English/355",
-                "Checksum": "8a47b697fa66eeb04c71a7ed29173bd0"
+                "Checksum": "ac973115c4bb6f68379688894dd2d8da"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 1.txt",
@@ -64,7 +69,7 @@
             {
                 "Name": "Melusine.cs",
                 "Location": "zones/English/356",
-                "Checksum": "90c57a6e4bda5a62f54c2402a1fb5212"
+                "Checksum": "c8d5fc8a3dd9642e8df40224c36ac324"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 2.txt",
@@ -79,12 +84,12 @@
             {
                 "Name": "The Avatar.cs",
                 "Location": "zones/English/357",
-                "Checksum": "601875aa95a91158e2c7daf314aebb30"
+                "Checksum": "663095d0dc24ce50cc6cbdeda1fcc3d7"
             },
             {
                 "Name": "Nael Deus Darnus.cs",
                 "Location": "zones/English/358",
-                "Checksum": "4fff425bb6305164659f38b07d59fc2e"
+                "Checksum": "c009f5054cc1b6900f15044017220001"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 4.txt",

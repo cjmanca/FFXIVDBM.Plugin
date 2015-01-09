@@ -279,7 +279,7 @@ namespace FFXIVDBM.Plugin
                 ttsThread.Start();
 
                 // send ticks 10 times per second to the encounter controllers
-                tickTimer = new System.Timers.Timer(100);
+                tickTimer = new System.Timers.Timer(50);
                 tickTimer.Elapsed += tickTimerEvent;
                 tickTimer.Start();
 

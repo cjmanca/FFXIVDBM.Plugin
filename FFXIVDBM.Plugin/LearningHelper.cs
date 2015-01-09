@@ -531,7 +531,7 @@ namespace EncounterNS
 
                     lastTime = abil.logTime;
 
-                    output += "            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(" + timeDiff.TotalSeconds + "), " + abil.ability.abilityName + ");      // " + abil.logTime.Hour + ":" + abil.logTime.Minute + ":" + abil.logTime.Second + ":" + abil.logTime.Millisecond + Environment.NewLine;
+                    output += "            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(" + timeDiff.TotalSeconds + "), " + abil.ability.abilityName + ");      // " + abil.logTime.Hour + ":" + abil.logTime.Minute + ":" + abil.logTime.Second + ":" + abil.logTime.Millisecond + " @ " + abil.bossHPPct + "%" + Environment.NewLine;
                 }
 
 
@@ -806,7 +806,7 @@ namespace EncounterNS
                                     }
                                 }
 
-                                if (!foundPerson || ability == "Pacification" || ability == "Weakness" || ability == "Brink of Death")
+                                if (!foundPerson || ability == "Pacification" || ability == "Weakness" || ability == "Brink of Death" || ability == "Holmgang")
                                 {
                                     return;
                                 }

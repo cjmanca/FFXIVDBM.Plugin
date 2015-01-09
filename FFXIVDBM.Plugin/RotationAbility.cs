@@ -8,6 +8,9 @@ namespace FFXIVDBM.Plugin
 {
     public class RotationAbility : Ability
     {
+
+        public bool uniqueInPhase = false;
+
         public static new RotationAbility Blank()
         {
             return new RotationAbility();

@@ -26,48 +26,49 @@ namespace NaelDeusDarnusNS
 
             // Enrage Timer
             TriggeredAbility EnrageTrigger = new TriggeredAbility();
+            timedAbilities.Add(EnrageTrigger);
             EnrageTrigger.warningMessage = "Enrage in one minute";
             EnrageTrigger.timerDuration = TimeSpan.FromMinutes(13);
             EnrageTrigger.warningTime = TimeSpan.FromSeconds(65);
 
-            timedAbilities.Add(EnrageTrigger);
 
             EnrageTrigger.start();
 
 
             // Person with thunderstruck needs to get away from everyone else
             TriggeredAbility ThunderstruckTrigger = new TriggeredAbility();
+            timedAbilities.Add(ThunderstruckTrigger);
             ThunderstruckTrigger.match = new Regex(@"(?<member>[^ ]+?) [^ ]* suffers the effect of Thunderstruck\.");
             ThunderstruckTrigger.matchMessage = "${member} Thunder";
 
-            timedAbilities.Add(ThunderstruckTrigger);
 
             // When this drops, need to be about 55% - 75% along the radius of the arena away from the edge (0% is at edge, 100% is at center of arena)
             TriggeredAbility HeavensfallTrigger = new TriggeredAbility();
+            timedAbilities.Add(HeavensfallTrigger);
             HeavensfallTrigger.match = new Regex(@" readies Heavensfall\.");
             HeavensfallTrigger.matchMessage = "Heaven's fall";
 
-            timedAbilities.Add(HeavensfallTrigger);
 
             // Needs to be silenced
             TriggeredAbility EarthshockTrigger = new TriggeredAbility();
+            timedAbilities.Add(EarthshockTrigger);
             EarthshockTrigger.match = new Regex(@" readies Earthshock\.");
             EarthshockTrigger.matchMessage = "Earth shock";
 
-            timedAbilities.Add(EarthshockTrigger);
 
 
             // Blight lasts 12 seconds. Warn 5 seconds before it ends (12-5=7)
             TriggeredAbility RavenBlightTrigger = new TriggeredAbility();
+            timedAbilities.Add(RavenBlightTrigger);
             RavenBlightTrigger.match = new Regex(@" suffers the effect of Raven Blight\.");
             RavenBlightTrigger.warningMessage = "Blight";
             RavenBlightTrigger.timerDuration = TimeSpan.FromSeconds(12);
             RavenBlightTrigger.warningTime = TimeSpan.FromSeconds(5);
 
-            timedAbilities.Add(RavenBlightTrigger);
 
 
             TriggeredAbility GarroteTwist = new TriggeredAbility(); // Garrote Twist
+            timedAbilities.Add(GarroteTwist);
             GarroteTwist.announceWarning = true;
             GarroteTwist.match = new Regex(@"(?<member>[^ ]+?) [^ ]* suffers the effect of Garrote Twist");
             GarroteTwist.matchMessage = @"${member} Twist"; 
@@ -259,7 +260,7 @@ namespace NaelDeusDarnusNS
             phases[phaseNum].phaseEndHP = 65;
 
 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), Ravensclaw);      // 20:20:12:381 @ 99.7669476312431%
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(9), Ravensclaw);      // 20:20:12:381 @ 99.7669476312431%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(11.1666387), Ravensclaw);      // 20:20:23:548 @ 97.2918055007918%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2.343134), Stardust);      // 20:20:25:891 @ 96.9166541742199%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(8.0644612), Ravensbeak);      // 20:20:33:955 @ 94.6969878296274%

@@ -503,7 +503,7 @@ namespace FFXIVDBM.Plugin
                             {
                                 if (timeUntilNextRotationsAbil < timeBetweenNowAndThisRotationsTime)
                                 {
-                                    if (timeUntilNextRotationsAbil <= TimeSpan.FromSeconds(10))
+                                    if (timeUntilNextRotationsAbil <= TimeSpan.FromSeconds(10) || abil.Value.uniqueInPhase)
                                     {
                                         phases[_phase].phaseStarted += timeUntilNextRotationsAbil;
                                         nextRotationTime += timeUntilNextRotationsAbil;
@@ -514,7 +514,7 @@ namespace FFXIVDBM.Plugin
                                 }
                                 else
                                 {
-                                    if (timeBetweenNowAndThisRotationsTime <= TimeSpan.FromSeconds(10))
+                                    if (timeBetweenNowAndThisRotationsTime <= TimeSpan.FromSeconds(10) || abil.Value.uniqueInPhase)
                                     {
                                         phases[_phase].phaseStarted += timeBetweenNowAndThisRotationsTime;
                                         nextRotationTime += timeBetweenNowAndThisRotationsTime;
@@ -527,7 +527,7 @@ namespace FFXIVDBM.Plugin
                             {
                                 if (timeSinceLastRotationsAbil < timeBetweenNowAndThisRotationsTime)
                                 {
-                                    if (timeSinceLastRotationsAbil <= TimeSpan.FromSeconds(10))
+                                    if (timeSinceLastRotationsAbil <= TimeSpan.FromSeconds(10) || abil.Value.uniqueInPhase)
                                     {
                                         phases[_phase].phaseStarted -= timeSinceLastRotationsAbil;
                                         nextRotationTime -= timeSinceLastRotationsAbil;
@@ -537,7 +537,7 @@ namespace FFXIVDBM.Plugin
                                 }
                                 else
                                 {
-                                    if (timeBetweenNowAndThisRotationsTime <= TimeSpan.FromSeconds(10))
+                                    if (timeBetweenNowAndThisRotationsTime <= TimeSpan.FromSeconds(10) || abil.Value.uniqueInPhase)
                                     {
                                         phases[_phase].phaseStarted -= timeBetweenNowAndThisRotationsTime;
                                         nextRotationTime -= timeBetweenNowAndThisRotationsTime;
@@ -593,7 +593,11 @@ namespace FFXIVDBM.Plugin
             _inController = false;
         }
 
-
+        public void delayRotation(TimeSpan amount)
+        {
+            phases[_phase].phaseStarted += amount;
+            nextRotationTime += amount;
+        }
 
 
         public static void tts(string toRead)

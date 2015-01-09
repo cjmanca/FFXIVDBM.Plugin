@@ -28,7 +28,10 @@
             <TabControl>
                 <TabItem Header="{Binding Locale[sample_ChatLogTabHeader],
                                           Source={StaticResource PluginViewModel}}">
-                    <Controls:xFlowDocument x:Name="ChatLogFD" Height="600" />
+                    <StackPanel>
+                        <Image HorizontalAlignment="Center" Height="26" VerticalAlignment="Top" Width="92" Stretch="None" Source="../Media/Images/donate.gif" Cursor="Hand" MouseUp="Image_MouseUp"/>
+                        <Controls:xFlowDocument x:Name="ChatLogFD" Height="600" />
+                    </StackPanel>
                 </TabItem>
             </TabControl>
         </StackPanel>

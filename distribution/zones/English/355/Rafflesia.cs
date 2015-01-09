@@ -135,9 +135,6 @@ namespace RafflesiaNS
 
             phaseNum = 1;
             phases[phaseNum] = new Phase();
-            phases[phaseNum].phaseEndRegex = new Regex(@" readies Blighted Bouquet");
-            phases[phaseNum].phaseEndHP = 70;
-            // Ends at 70, but also search for Blighted Bouquet, just in case
 
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), BloodyCaress);      // 19:48:24:941
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(4), ThornyVine);      // 19:48:28
@@ -163,11 +160,13 @@ namespace RafflesiaNS
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(12.8897372), RotationAbility.Blank());      // 19:49:53:556
 
 
+            phases[phaseNum].phaseEndRegex = new Regex(@" readies Blighted Bouquet");
+            phases[phaseNum].phaseEndHP = 69;
+            // Ends at 70, but also search for Blighted Bouquet, just in case
+
 
             phaseNum = 2;
             phases[phaseNum] = new Phase();
-            phases[phaseNum].phaseEndRegex = new Regex(@" readies Leafstorm");
-            phases[phaseNum].phaseEndHP = 40;
 
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(3), BloodyCaress);      // 19:50:18:571
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2.1051204), BlightedBouquet);      // 19:50:20:881
@@ -197,6 +196,9 @@ namespace RafflesiaNS
 
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(8), ThornyVine);              // 19:51:46:878
 
+
+            phases[phaseNum].phaseEndRegex = new Regex(@" readies Leafstorm");
+            phases[phaseNum].phaseEndHP = 39;
 
 
             phaseNum = 3;

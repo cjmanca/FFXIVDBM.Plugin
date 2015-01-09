@@ -27,6 +27,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 // POSSIBILITY OF SUCH DAMAGE. 
 
+using FFXIVDBM.Plugin.Properties;
+using System;
+using System.Diagnostics;
+using System.IO;
 namespace FFXIVDBM.Plugin.Views
 {
     /// <summary>
@@ -40,6 +44,32 @@ namespace FFXIVDBM.Plugin.Views
         {
             InitializeComponent();
             View = this;
+
+
+
+            try
+            {
+                var timeStampColor = Settings.Default.TimeStampColor.ToString();
+                DateTime now = DateTime.Now.ToUniversalTime();
+                string timeStamp = "[" + now.ToShortDateString() + " " + now.Hour + ":" + now.Minute + ":" + now.Second + ":" + now.Millisecond + "] ";
+                string line = File.ReadAllText(Constants.BaseDirectory + @"\readme.txt");
+
+                timeStamp = "";
+
+                FFXIVAPP.Common.Constants.FD.AppendFlow(timeStamp, "", line, new[]
+                {
+                    timeStampColor, "#FFFFFF"
+                }, MainView.View.ChatLogFD._FDR);
+            }
+            catch
+            {
+
+            }
+        }
+
+        private void Image_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            Process.Start("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=L2PJFE6KF4MT4");
         }
     }
 }
