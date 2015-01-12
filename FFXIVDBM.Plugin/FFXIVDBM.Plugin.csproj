@@ -206,6 +206,7 @@
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <PropertyGroup>
     <PostBuildEvent>mkdir "$(SolutionDir)\..\Parser\Plugins\$(SolutionName)"
+copy "$(TargetPath)" "$(SolutionDir)\distribution\"
 copy "$(TargetPath)" "$(SolutionDir)\..\Parser\Plugins\$(SolutionName)\"
 if $(ConfigurationName) == Debug copy "$(TargetDir)\*.pdb" "$(SolutionDir)\..\Parser\Plugins\$(SolutionName)\"
 cd "$(SolutionDir)\distribution\"

@@ -1,7 +1,7 @@
 {
     "PluginInfo": {
         "Name": "FFXIVDBM.Plugin",
-        "Version": "1.0.5458.996",
+        "Version": "1.0.5490.28756",
         "FriendlyName": "Deadly Boss Mods",
         "Description": "Gives audible warnings for many encounters",
         "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/",
@@ -9,7 +9,7 @@
             {
                 "Name": "FFXIVDBM.Plugin.dll",
                 "Location": "",
-                "Checksum": "acc58acd56e5e3c59b125ae84189e96f"
+                "Checksum": "8730359e071b3e26cf69a5eb00399356"
             },
             {
                 "Name": "Logo.png",
@@ -89,7 +89,7 @@
             {
                 "Name": "Nael Deus Darnus.cs",
                 "Location": "zones/English/358",
-                "Checksum": "c009f5054cc1b6900f15044017220001"
+                "Checksum": "e5edf2892eaa30a825891f635a5924a2"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 4.txt",

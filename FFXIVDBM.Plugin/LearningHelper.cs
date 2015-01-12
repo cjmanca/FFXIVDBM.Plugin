@@ -438,7 +438,7 @@ namespace EncounterNS
         public void writeClassFile()
         {
 
-            DateTime lastTime = DateTime.MaxValue;
+            DateTime lastTime = EncounterController.started;
             TimeSpan timeDiff = TimeSpan.Zero;
 
             
@@ -512,16 +512,9 @@ namespace EncounterNS
 
                 foreach (lineDetails abil in abilityTimedOrder[bossName])
                 {
-                    if (lastTime == DateTime.MaxValue)
+                    if (abil.logTime - abil.ability.lastUsed < TimeSpan.FromSeconds(10))
                     {
-                        lastTime = abil.logTime;
-                    }
-                    else
-                    {
-                        if (abil.logTime - abil.ability.lastUsed < TimeSpan.FromSeconds(10))
-                        {
-                            continue;
-                        }
+                        continue;
                     }
 
                     abil.ability.lastUsed = abil.logTime;
@@ -596,21 +589,14 @@ namespace EncounterNS
             output += "            //phases[phaseNum].phaseEndRegex = new Regex(\"Titan uses Geocrush\");" + Environment.NewLine;
             output += "            " + Environment.NewLine;
 
-            lastTime = DateTime.MaxValue;
+            lastTime = EncounterController.started;
             timeDiff = TimeSpan.Zero;
 
             foreach (lineDetails abil in abilityTimedOrderAll)
             {
-                if (lastTime == DateTime.MaxValue)
+                if (abil.logTime - abil.ability.lastUsed < TimeSpan.FromSeconds(10))
                 {
-                    lastTime = abil.logTime;
-                }
-                else
-                {
-                    if (abil.logTime - abil.ability.lastUsed < TimeSpan.FromSeconds(10))
-                    {
-                        continue;
-                    }
+                    continue;
                 }
 
                 abil.ability.lastUsed = abil.logTime;

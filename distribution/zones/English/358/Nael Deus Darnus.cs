@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -260,7 +260,7 @@ namespace NaelDeusDarnusNS
             phases[phaseNum].phaseEndHP = 65;
 
 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(9), Ravensclaw);      // 20:20:12:381 @ 99.7669476312431%
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(5), Ravensclaw);      // 20:20:12:381 @ 99.7669476312431%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(11.1666387), Ravensclaw);      // 20:20:23:548 @ 97.2918055007918%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2.343134), Stardust);      // 20:20:25:891 @ 96.9166541742199%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(8.0644612), Ravensbeak);      // 20:20:33:955 @ 94.6969878296274%
