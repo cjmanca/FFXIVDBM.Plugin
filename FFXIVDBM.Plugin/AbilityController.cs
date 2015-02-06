@@ -113,8 +113,12 @@ namespace FFXIVDBM.Plugin
         }
 
 
-        public bool inController()
+        public bool inController(bool? toSet = null)
         {
+            if (toSet != null)
+            {
+                _inController = toSet.Value;
+            }
             return _inController;
         }
 
@@ -489,7 +493,47 @@ namespace FFXIVDBM.Plugin
 
 
                             // First, figure out which point in the rotation is closest to our current time
-                            DateTime abilThisRotationsTime = phases[_phase].phaseStarted + abil.Key;
+
+
+                            TimeSpan closestKey = TimeSpan.Zero;
+                            DateTime closest = DateTime.MinValue;
+                            TimeSpan diff = TimeSpan.MaxValue;
+
+
+
+                            foreach (KeyValuePair<TimeSpan, RotationAbility> abil2 in phases[_phase].rotationAbilities)
+                            {
+                                if (abil2.Value == abil.Value)
+                                {
+                                    DateTime tmpDT = phases[_phase].phaseStarted + abil2.Key;
+                                    DateTime tmpDTLastRotationsTime = tmpDT - phases[_phase].phaseLength;
+                                    DateTime tmpDTNextRotationsTime = tmpDT + phases[_phase].phaseLength;
+
+                                    if ((tmpDT - DateTime.Now).Duration() < diff)
+                                    {
+                                        closest = tmpDT;
+                                        diff = (tmpDT - DateTime.Now).Duration();
+                                        closestKey = abil2.Key;
+                                    }
+                                    if ((tmpDTLastRotationsTime - DateTime.Now).Duration() < diff)
+                                    {
+                                        closest = tmpDTLastRotationsTime;
+                                        diff = (tmpDTLastRotationsTime - DateTime.Now).Duration();
+                                        closestKey = abil2.Key;
+                                    }
+                                    if ((tmpDTNextRotationsTime - DateTime.Now).Duration() < diff)
+                                    {
+                                        closest = tmpDTNextRotationsTime;
+                                        diff = (tmpDTNextRotationsTime - DateTime.Now).Duration();
+                                        closestKey = abil2.Key;
+                                    }
+                                }
+                            }
+
+
+                            DateTime abilThisRotationsTime = closest;
+                            //abilThisRotationsTime = phases[_phase].phaseStarted + abil.Key;
+
                             DateTime abilLastRotationsTime = abilThisRotationsTime - phases[_phase].phaseLength;
                             DateTime abilNextRotationsTime = abilThisRotationsTime + phases[_phase].phaseLength;
 
@@ -499,6 +543,17 @@ namespace FFXIVDBM.Plugin
 
                             EncounterController.debug(abil.Value.warningMessage + " matched (" + timeSinceLastRotationsAbil + ", " + timeBetweenNowAndThisRotationsTime + ", " + timeUntilNextRotationsAbil + "), phaseStarted: " + phases[_phase].phaseStarted + " nextRotationTime: " + nextRotationTime, DBMErrorLevel.FineTimings);
 
+
+                            /* * /
+                            if (timeBetweenNowAndThisRotationsTime <= TimeSpan.FromSeconds(10) || abil.Value.uniqueInPhase)
+                            {
+                                phases[_phase].phaseStarted += timeBetweenNowAndThisRotationsTime;
+                                nextRotationTime += timeBetweenNowAndThisRotationsTime;
+
+                                EncounterController.debug(" - timeBetweenNowAndThisRotationsTime closest, new phaseStarted: " + phases[_phase].phaseStarted + " new nextRotationTime: " + nextRotationTime, DBMErrorLevel.FineTimings);
+                            }
+
+                            /* */
                             if (timeUntilNextRotationsAbil < timeSinceLastRotationsAbil) // already passed this rotation, don't need to check last rotation times
                             {
                                 if (timeUntilNextRotationsAbil < timeBetweenNowAndThisRotationsTime)
@@ -546,6 +601,7 @@ namespace FFXIVDBM.Plugin
                                     }
                                 }
                             }
+                            /* */
                         }
 
                         if (abil.Value.matchCallback != null)

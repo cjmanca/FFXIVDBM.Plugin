@@ -12,15 +12,21 @@ namespace MelusineNS
 
     public class MainEncounterLogic : AbilityController, IEncounter
     {
-        int renaudCount = 0;
-        bool pausedDamage = false;
-        DateTime lastRenaud = DateTime.Now;
-        DateTime lastVoice = DateTime.Now;
+        int renaudCount;
+        bool pausedDamage;
+        DateTime lastRenaud;
+        DateTime lastVoice;
 
         public void onStartEncounter()
         {
             // bossName is needed if you want health based phase swaps
             bossName = "Melusine";
+
+
+            renaudCount = 0;
+            pausedDamage = false;
+            lastRenaud = DateTime.MinValue;
+            lastVoice = DateTime.MinValue;
 
 
             TriggeredAbility PetrifactionTrigger = new TriggeredAbility();

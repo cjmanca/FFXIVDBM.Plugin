@@ -441,6 +441,13 @@ namespace EncounterNS
             DateTime lastTime = EncounterController.started;
             TimeSpan timeDiff = TimeSpan.Zero;
 
+            string basepath = EncounterController.encounterZonePath + "\\Auto Helper\\" + safeBossName;
+            int num = 1;
+
+            while (File.Exists(basepath + "." + num + ".cs"))
+            {
+                num++;
+            }
             
             string output = "using System;" + Environment.NewLine;
             output += "using System.Collections.Generic;" + Environment.NewLine;
@@ -451,7 +458,7 @@ namespace EncounterNS
             output += "using FFXIVAPP.Common.Core.Memory;" + Environment.NewLine;
             output += "using System.Text.RegularExpressions;" + Environment.NewLine;
             output += "" + Environment.NewLine;
-            output += "namespace " + NSBossName + "NS" + Environment.NewLine;
+            output += "namespace " + NSBossName + "NS" + num + Environment.NewLine;
             output += "{" + Environment.NewLine;
             output += "    " + Environment.NewLine;
             output += "    public class MainEncounterLogic : AbilityController, IEncounter" + Environment.NewLine;
@@ -507,7 +514,7 @@ namespace EncounterNS
                 output += "            //phases[phaseNum].phaseEndRegex = new Regex(@\"Titan uses Geocrush\");" + Environment.NewLine;
                 output += "            " + Environment.NewLine;
 
-                lastTime = DateTime.MaxValue;
+                lastTime = EncounterController.started;
                 timeDiff = TimeSpan.Zero;
 
                 foreach (lineDetails abil in abilityTimedOrder[bossName])
@@ -666,13 +673,6 @@ namespace EncounterNS
     }
 }
 ";
-            string basepath = EncounterController.encounterZonePath + "\\Auto Helper\\" + safeBossName;
-            int num = 1;
-
-            while (File.Exists(basepath + "." + num + ".cs"))
-            {
-                num++;
-            }
 
             File.WriteAllText(basepath + "." + num + ".cs", output);
              

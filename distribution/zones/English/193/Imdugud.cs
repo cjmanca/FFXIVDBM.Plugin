@@ -14,8 +14,8 @@ namespace ImdugudNS
     {
         int nextPhaseNum;
 
-        bool midPointReached = false;
-        bool chargeCalled = false;
+        bool midPointReached;
+        bool chargeCalled;
 
         public void onStartEncounter()
         {
@@ -23,7 +23,10 @@ namespace ImdugudNS
 
             // bossName is needed if you want health based phase swaps
             bossName = "Imdugud";
-            
+
+            midPointReached = false;
+            chargeCalled = false;
+
             int phaseNum = 1; // for convenience
             
 

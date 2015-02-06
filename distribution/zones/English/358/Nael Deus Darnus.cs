@@ -38,21 +38,21 @@ namespace NaelDeusDarnusNS
             // Person with thunderstruck needs to get away from everyone else
             TriggeredAbility ThunderstruckTrigger = new TriggeredAbility();
             timedAbilities.Add(ThunderstruckTrigger);
-            ThunderstruckTrigger.match = new Regex(@"(?<member>[^ ]+?) [^ ]* suffers the effect of Thunderstruck\.");
+            ThunderstruckTrigger.match = new Regex(@"(?<member>[^ ]+?) [^ ]* suffers the effect of Thunderstruck");
             ThunderstruckTrigger.matchMessage = "${member} Thunder";
 
 
             // When this drops, need to be about 55% - 75% along the radius of the arena away from the edge (0% is at edge, 100% is at center of arena)
             TriggeredAbility HeavensfallTrigger = new TriggeredAbility();
             timedAbilities.Add(HeavensfallTrigger);
-            HeavensfallTrigger.match = new Regex(@" readies Heavensfall\.");
+            HeavensfallTrigger.match = new Regex(@" readies Heavensfall");
             HeavensfallTrigger.matchMessage = "Heaven's fall";
 
 
             // Needs to be silenced
             TriggeredAbility EarthshockTrigger = new TriggeredAbility();
             timedAbilities.Add(EarthshockTrigger);
-            EarthshockTrigger.match = new Regex(@" readies Earthshock\.");
+            EarthshockTrigger.match = new Regex(@" readies Earthshock");
             EarthshockTrigger.matchMessage = "Earth shock";
 
 
@@ -60,7 +60,7 @@ namespace NaelDeusDarnusNS
             // Blight lasts 12 seconds. Warn 5 seconds before it ends (12-5=7)
             TriggeredAbility RavenBlightTrigger = new TriggeredAbility();
             timedAbilities.Add(RavenBlightTrigger);
-            RavenBlightTrigger.match = new Regex(@" suffers the effect of Raven Blight\.");
+            RavenBlightTrigger.match = new Regex(@" suffers the effect of Raven Blight");
             RavenBlightTrigger.warningMessage = "Blight";
             RavenBlightTrigger.timerDuration = TimeSpan.FromSeconds(12);
             RavenBlightTrigger.warningTime = TimeSpan.FromSeconds(5);
@@ -79,19 +79,19 @@ namespace NaelDeusDarnusNS
             // 4k conal AOE
             RotationAbility Ravensclaw = new RotationAbility();
             Ravensclaw.announceWarning = false;
-            Ravensclaw.match = new Regex(@" uses Ravensclaw\.");
+            Ravensclaw.match = new Regex(@" uses Ravensclaw");
             Ravensclaw.warningMessage = "Ravensclaw";
 
             // T9 version of Death sentance. On 47 second timer outside of rotation. Places Raven's Blight debuff on tank, which does big damage when it wears off
             RotationAbility Ravensbeak = new RotationAbility();
             Ravensbeak.announceWarning = true;
-            Ravensbeak.match = new Regex(@" readies Ravensbeak\.");
+            Ravensbeak.match = new Regex(@" readies Ravensbeak");
             Ravensbeak.warningMessage = "Ravensbeak";
             Ravensbeak.warningTime = TimeSpan.FromSeconds(4);
 
             RotationAbility RavenBlight = new RotationAbility(); // Raven Blight
             RavenBlight.announceWarning = false;
-            RavenBlight.match = new Regex(@" suffers the effect of Raven Blight\.");
+            RavenBlight.match = new Regex(@" suffers the effect of Raven Blight");
             RavenBlight.warningMessage = @"Raven Blight"; 
 
 
@@ -100,7 +100,7 @@ namespace NaelDeusDarnusNS
             // This is just here to help with rotation timings
             RotationAbility RavensAscent = new RotationAbility();
             RavensAscent.announceWarning = false;
-            RavensAscent.match = new Regex(@" uses Raven's Ascent\.");
+            RavensAscent.match = new Regex(@" uses Raven's Ascent");
             RavensAscent.warningMessage = "Raven's Ascent";
 
 
@@ -109,7 +109,7 @@ namespace NaelDeusDarnusNS
             // Announcing 2 seconds after it happens (right when icon should show up), since this will just act as a prompt to look for the icon above your head
             RotationAbility Stardust = new RotationAbility();
             Stardust.announceWarning = true;
-            Stardust.match = new Regex(@" readies Stardust\.");
+            Stardust.match = new Regex(@" readies Stardust");
             Stardust.warningMessage = "Stardust";
             Stardust.warningTime = TimeSpan.FromSeconds(-2);
 
@@ -117,14 +117,14 @@ namespace NaelDeusDarnusNS
             // Jumps on main tank.
             RotationAbility RavenDive = new RotationAbility();
             RavenDive.announceWarning = false;
-            RavenDive.match = new Regex(@" uses Raven Dive\.");
+            RavenDive.match = new Regex(@" uses Raven Dive");
             RavenDive.warningMessage = "Raven Dive";
 
 
             // Iron chariot point blank AOE, which starts off the chariot/dive/thermionic beam combo
             RotationAbility IronChariot = new RotationAbility();
             IronChariot.announceWarning = true;
-            IronChariot.match = new Regex(@" readies Iron Chariot\.");
+            IronChariot.match = new Regex(@" readies Iron Chariot");
             IronChariot.warningMessage = "Chariot";
             IronChariot.warningTime = TimeSpan.FromSeconds(7);
 
@@ -132,14 +132,14 @@ namespace NaelDeusDarnusNS
             // Damage is split by all who it hits. Very small range. Need to stack tight on one person (usually in the center of the arena)
             RotationAbility ThermionicBeam = new RotationAbility(); // Inertia Stream
             ThermionicBeam.announceWarning = true;
-            ThermionicBeam.match = new Regex(@" uses Thermionic Beam\.");
+            ThermionicBeam.match = new Regex(@" uses Thermionic Beam");
             ThermionicBeam.warningMessage = "Thermeonic";
             ThermionicBeam.warningTime = TimeSpan.FromSeconds(7);
 
 
             RotationAbility LunarDynamo = new RotationAbility();
             LunarDynamo.announceWarning = true;
-            LunarDynamo.match = new Regex(@" readies Lunar Dynamo\.");
+            LunarDynamo.match = new Regex(@" readies Lunar Dynamo");
             LunarDynamo.warningMessage = "Lunar Dynamo";
             LunarDynamo.warningTime = TimeSpan.FromSeconds(5);
 
@@ -147,17 +147,17 @@ namespace NaelDeusDarnusNS
 
             RotationAbility MeteorStream = new RotationAbility();
             MeteorStream.announceWarning = true;
-            MeteorStream.match = new Regex(@" uses Meteor Stream\.");
+            MeteorStream.match = new Regex(@" uses Meteor Stream");
             MeteorStream.warningMessage = "Meteor Stream";
 
             RotationAbility DalamudDive = new RotationAbility();
             DalamudDive.announceWarning = false;
-            DalamudDive.match = new Regex(@" uses Dalamud Dive\.");
+            DalamudDive.match = new Regex(@" uses Dalamud Dive");
             DalamudDive.warningMessage = "Dalamud Dive";
 
             RotationAbility MeteorImpact = new RotationAbility(); // Meteor Impact
             MeteorImpact.announceWarning = false;
-            MeteorImpact.match = new Regex(@" uses Meteor Impact\.");
+            MeteorImpact.match = new Regex(@" uses Meteor Impact");
             MeteorImpact.warningMessage = @"Meteor Impact"; 
             
 
@@ -175,12 +175,12 @@ namespace NaelDeusDarnusNS
 
             RotationAbility BahamutsFavor = new RotationAbility();
             BahamutsFavor.announceWarning = false;
-            BahamutsFavor.match = new Regex(@"Nael Deus Darnus uses Bahamut's Favor\.");
+            BahamutsFavor.match = new Regex(@"Nael Deus Darnus uses Bahamut's Favor");
             BahamutsFavor.warningMessage = "Bahamut's Favor";
 
             RotationAbility BahamutsClaw = new RotationAbility();
             BahamutsClaw.announceWarning = false;
-            BahamutsClaw.match = new Regex(@"Nael Deus Darnus uses Bahamut's Claw\.");
+            BahamutsClaw.match = new Regex(@"Nael Deus Darnus uses Bahamut's Claw");
             BahamutsClaw.warningMessage = "Bahamut's Claw";
 
             RotationAbility FireTetherOut = new RotationAbility();
@@ -227,7 +227,7 @@ namespace NaelDeusDarnusNS
 
             RotationAbility SuperNova = new RotationAbility();
             SuperNova.announceWarning = false;
-            SuperNova.match = new Regex(@" uses SuperNova\.");
+            SuperNova.match = new Regex(@" uses SuperNova");
             SuperNova.warningMessage = "Super Nova";
             SuperNova.warningTime = TimeSpan.FromSeconds(7);
 
@@ -260,7 +260,7 @@ namespace NaelDeusDarnusNS
             phases[phaseNum].phaseEndHP = 65;
 
 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(5), Ravensclaw);      // 20:20:12:381 @ 99.7669476312431%
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(9), Ravensclaw);      // 20:20:12:381 @ 99.7669476312431%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(11.1666387), Ravensclaw);      // 20:20:23:548 @ 97.2918055007918%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2.343134), Stardust);      // 20:20:25:891 @ 96.9166541742199%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(8.0644612), Ravensbeak);      // 20:20:33:955 @ 94.6969878296274%

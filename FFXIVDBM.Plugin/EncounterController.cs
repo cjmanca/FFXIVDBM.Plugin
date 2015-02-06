@@ -22,6 +22,7 @@ using System.Threading;
 using System.Diagnostics;
 using FFXIVDBM.Plugin.Views;
 using FFXIVDBM.Plugin.Properties;
+using System.Runtime.InteropServices;
 
 namespace FFXIVDBM.Plugin
 {
@@ -125,6 +126,18 @@ namespace FFXIVDBM.Plugin
                 _playerEntity = value;
             }
         }
+        private static TargetEntity _targetEntity = null;
+        public static TargetEntity targetEntity
+        {
+            get
+            {
+                return _targetEntity;
+            }
+            set
+            {
+                _targetEntity = value;
+            }
+        }
 
         private static ActorEntity _currentUser = null;
         public static ActorEntity CurrentUser 
@@ -148,17 +161,29 @@ namespace FFXIVDBM.Plugin
             }
             set
             {
+                bool newZone = false;
                 if (_zone != null && value != null &&_zone.Index != value.Index)
+                {
+                    newZone = true;
+                }
+
+                _zone = value;
+
+                if (newZone)
                 {
                     handleRemoveEntryName = "Zone change";
                     endEncounter();
                     handleRemoveEntryName = "";
+                    debug("Entered zone: " + _zone.Index);
+                    compileScripts();
                 }
-                _zone = value;
             }
         }
 
         #endregion
+
+        private static CompilerParameters cp;
+        private static CodeDomProvider cdp;
 
         private static IEncounter implementationClass = null;
         private static IEncounter learningHelperClass = null;
@@ -168,6 +193,8 @@ namespace FFXIVDBM.Plugin
         private static System.Timers.Timer tickTimer = null;
         private static System.Timers.Timer enmityTimer = null;
 
+        private static Dictionary<string, Assembly> encounters = new Dictionary<string,Assembly>();
+        public static Dictionary<string, DateTime> classModified = new Dictionary<string,DateTime>();
 
         private static string debugLogPath = "";
         private static string encounterDebugLogPath = "";
@@ -216,6 +243,7 @@ namespace FFXIVDBM.Plugin
         private static Regex endString = null;
 
         public static List<string> ignoreMobs;
+        static DateTime firstAgro = DateTime.MinValue;
 
         static bool inUpdate = false;
         static bool inTick = false;
@@ -273,12 +301,14 @@ namespace FFXIVDBM.Plugin
                 youRecoverDict["German"] = null; // new Replacements(new Regex(@""), "");
                 sealedOffDict["German"] = new Regex(@" will be sealed off in 15 seconds\!"); // TODO: Find out the Japanese translation for this
 
+                // Setup parameters for dynamic class loading
+                setupClassAssembly();
 
+                // Setup text-to-speech queue system
                 ttsThread = new Thread(TTSThread);
-
                 ttsThread.Start();
 
-                // send ticks 10 times per second to the encounter controllers
+                // send ticks 20 times per second to the encounter controllers
                 tickTimer = new System.Timers.Timer(50);
                 tickTimer.Elapsed += tickTimerEvent;
                 tickTimer.Start();
@@ -287,6 +317,7 @@ namespace FFXIVDBM.Plugin
                 enmityTimer = new System.Timers.Timer(500);
                 enmityTimer.Elapsed += updateData;
                 enmityTimer.Start();
+
 
             }
             catch (Exception e2)
@@ -297,7 +328,7 @@ namespace FFXIVDBM.Plugin
 
         static void trySetup()
         {
-            if (Constants.GameLanguage == null)
+            if (Constants.GameLanguage == null || CurrentUser == null)
             {
                 return;
             }
@@ -362,6 +393,16 @@ namespace FFXIVDBM.Plugin
                     EncounterController.errorLevel = DBMErrorLevel.EncounterInfo;
                 }
 
+                if (CurrentUser.HPMax == 0)
+                {
+                    return;
+                }
+                if (_targetEntity == null)
+                {
+                    return;
+                }
+
+                compileScripts();
 
                 debug("DBM Ready, speech volume: " + speechVolume);
 
@@ -405,6 +446,11 @@ namespace FFXIVDBM.Plugin
                                 // make sure it's our own copy so it won't mysteriously disappear or change without our knowledge
                                 currentEntity = cloneActorEntity(currentEntity);
 
+                                if (_agroList.Count == 0)
+                                {
+                                    firstAgro = DateTime.Now;
+                                }
+
                                 _agroList.Add(currentEntity);
 
 
@@ -414,11 +460,14 @@ namespace FFXIVDBM.Plugin
                                     try
                                     {
                                         debug("Agroed Mob: " + currentEntity.Name, DBMErrorLevel.Trace);
+                                        inController = false;
                                         implementationClass.onMobAgro(currentEntity);
+                                        inController = true;
                                     }
                                     catch (Exception e2)
                                     {
                                         debug("onMobAgro", getEngineVsEncounter(implementationClass), e2);
+                                        inController = true;
                                     }
                                     try
                                     {
@@ -432,12 +481,6 @@ namespace FFXIVDBM.Plugin
                                 }
                                 else
                                 {
-                                    // No encounter script loaded. Lets see if we have one that matches this mob
-                                    Regex rgx = new Regex("[^a-zA-Z0-9 -]");
-                                    string mobName = rgx.Replace(currentEntity.Name, "");
-
-                                    string dir = getZoneDirectory();
-
                                     if (useTestEncounter)
                                     {
                                         IEncounter inst = (IEncounter)(new TestEncounter());
@@ -451,11 +494,32 @@ namespace FFXIVDBM.Plugin
                                     }
                                     else
                                     {
-                                        if (File.Exists(dir + @"\" + mobName + ".cs"))
+                                        // No encounter script loaded. Lets see if we have one that matches this mob
+                                        Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+                                        string mobName = rgx.Replace(currentEntity.Name, "");
+
+                                        string dir = getScriptsDirectory();
+
+                                        checkRecompile(currentEntity.Name);
+
+                                        if (encounters.ContainsKey(mobName))
                                         {
-                                            // Found one, lets load the script
-                                            loadClassFile(dir + @"\" + mobName + ".cs");
-                                            debug("Agroed Mob: " + currentEntity.Name, DBMErrorLevel.Trace);
+                                            IEncounter inst = findEntryPoint(encounters[mobName]);
+                                            implementationClass = inst;
+
+                                            if (implementationClass != null)
+                                            {
+                                                setupNewClass(inst);
+
+                                                debug("Encounter started (" + dir + @"\" + mobName + ".cs)", DBMErrorLevel.Trace);
+                                                debug("Agroed Mob: " + currentEntity.Name, DBMErrorLevel.Trace);
+
+                                                resetLearningHelper();
+                                            }
+                                            else
+                                            {
+                                                debug("Couldn't find entry point in class: " + dir + @"\" + mobName + ".cs", DBMErrorLevel.EngineErrors);
+                                            }
                                         }
                                     }
                                 }
@@ -503,6 +567,37 @@ namespace FFXIVDBM.Plugin
             }
         }
 
+        static bool inController
+        {
+            get
+            {
+                if (implementationClass != null)
+                {
+                    return implementationClass.inController();
+                }
+                else
+                {
+                    if (learningHelperClass != null)
+                    {
+                        return learningHelperClass.inController();
+                    }
+                }
+
+                return true;
+            }
+            set
+            {
+                if (implementationClass != null)
+                {
+                    implementationClass.inController(value);
+                }
+                if (learningHelperClass != null)
+                {
+                    learningHelperClass.inController(value);
+                }
+            }
+        }
+
         static void checkForNewMobs()
         {
             try
@@ -526,7 +621,7 @@ namespace FFXIVDBM.Plugin
                         if (currentEntityIEnum.Any())
                         {
                             ActorEntity currentEntity = currentEntityIEnum.First();
-                            if (currentEntity != null && currentEntity.IsValid && currentEntity.HPCurrent > 0)
+                            if (currentEntity != null && currentEntity.IsValid && currentEntity.HPCurrent > 0 && (currentEntity.OwnerID == 0 || currentEntity.OwnerID >= 0xE0000000))
                             {
                                 // make sure it's our own copy so it won't mysteriously disappear or change without our knowledge
                                 currentEntity = cloneActorEntity(currentEntity);
@@ -551,12 +646,15 @@ namespace FFXIVDBM.Plugin
                                     // send the new mobs to the encounter script
                                     try
                                     {
+                                        inController = false;
                                         debug("Added Mob: " + currentEntity.Name + " ID: " + currentEntity.ID + " NPCID1: " + currentEntity.NPCID1 + " NPCID2: " + currentEntity.NPCID2, DBMErrorLevel.Trace);
                                         implementationClass.onMobAdded(currentEntity);
+                                        inController = true;
                                     }
                                     catch (Exception e2)
                                     {
                                         debug("onMobAdded", getEngineVsEncounter(implementationClass), e2);
+                                        inController = true;
                                     }
 
                                 }
@@ -771,6 +869,9 @@ namespace FFXIVDBM.Plugin
                 inTick = true;
             }
 
+
+
+
             lock (accessControl)
             {
 
@@ -793,7 +894,9 @@ namespace FFXIVDBM.Plugin
                     try
                     {
                         implementationClass.tick();
+                        inController = false;
                         implementationClass.onTick();
+                        inController = true;
                     }
                     catch (Exception e2)
                     {
@@ -836,7 +939,9 @@ namespace FFXIVDBM.Plugin
                     {
                         debug("Removed Mob: " + currentEntity.Name + " ID: " + currentEntity.ID + " NPCID1: " + currentEntity.NPCID1 + " NPCID2: " + currentEntity.NPCID2 + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ")", DBMErrorLevel.Trace);
                     }
+                    inController = false;
                     implementationClass.onMobRemoved(cachedEntity);
+                    inController = true;
                 }
                 catch (Exception e2)
                 {
@@ -873,11 +978,14 @@ namespace FFXIVDBM.Plugin
             {
                 try
                 {
+                    inController = false;
                     implementationClass.onAgroRemoved(cachedEntity);
+                    inController = true;
                 }
                 catch (Exception e2)
                 {
                     debug("onAgroRemoved", getEngineVsEncounter(implementationClass), e2);
+                    inController = true;
                 }
             }
 
@@ -910,12 +1018,15 @@ namespace FFXIVDBM.Plugin
                 debug("endEncounter removed " + handleRemoveEntryName + "(" + handleRemoveEntry + ")", DBMErrorLevel.Trace);
                 try
                 {
+                    inController = false;
                     implementationClass.endEncounter();
                     implementationClass.onEndEncounter();
+                    inController = true;
                 }
                 catch (Exception e2)
                 {
                     debug("endEncounter", getEngineVsEncounter(implementationClass), e2);
+                    inController = true;
                 }
                 implementationClass = null;
             }
@@ -924,17 +1035,21 @@ namespace FFXIVDBM.Plugin
             _mobCached.Clear();
             encounterStarted = false;
         }
+        
 
         public static void setupNewClass(IEncounter inst)
         {
             encounterStarted = true;
             try
             {
+                inController = false;
                 inst.onStartEncounter();
+                inController = true;
             }
             catch (Exception e2)
             {
                 debug("onStartEncounter", getEngineVsEncounter(inst), e2);
+                inController = true;
             }
 
             try
@@ -951,11 +1066,14 @@ namespace FFXIVDBM.Plugin
             {
                 try
                 {
+                    inController = false;
                     inst.onMobAgro(tmpEnt);
+                    inController = true;
                 }
                 catch (Exception e2)
                 {
                     debug("onMobAgro", getEngineVsEncounter(inst), e2);
+                    inController = true;
                 }
                 try
                 {
@@ -975,12 +1093,78 @@ namespace FFXIVDBM.Plugin
                     {
                         debug("Added Mob (Setup): " + tmpEnt.Name + " ID: " + tmpEnt.ID + " NPCID1: " + tmpEnt.NPCID1 + " NPCID2: " + tmpEnt.NPCID2, DBMErrorLevel.Trace);
                     }
+                    inController = false;
                     inst.onMobAdded(tmpEnt);
+                    inController = true;
                 }
                 catch (Exception e2)
                 {
                     debug("onMobAdded", getEngineVsEncounter(inst), e2);
                 }
+            }
+        }
+
+        public static bool checkRecompile(string mobNameRaw)
+        {
+            // No encounter script loaded. Lets see if we have one that matches this mob
+            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+            string mobName = rgx.Replace(mobNameRaw, "");
+
+            string dir = getScriptsDirectory();
+
+            FileInfo fi = new FileInfo(dir + @"\" + mobName + ".cs");
+
+            if (classModified.ContainsKey(mobName))
+            {
+
+                if (fi.LastWriteTimeUtc != classModified[mobName])
+                {
+                    endEncounter();
+
+                    compileScripts();
+                    return true;
+                }
+            }
+            else if (fi.Exists)
+            {
+                compileScripts();
+            }
+
+            return false;
+        }
+
+        private static void resetLearningHelper()
+        {
+            if (learningHelperClass != null)
+            {
+                try
+                {
+                    learningHelperClass.endEncounter();
+                    inController = false;
+                    learningHelperClass.onEndEncounter();
+                    inController = true;
+                }
+                catch (Exception e2)
+                {
+                    inController = true;
+                    debug("learningHelper processChatLine", getEngineVsEncounter(learningHelperClass), e2);
+                }
+                learningHelperClass = null;
+            }
+
+            try
+            {
+                refreshIgnoreMobsList();
+
+                // Start learning helper for a new encounter
+                LearningHelper abc = new LearningHelper();
+                setupNewClass((IEncounter)abc);
+                learningHelperClass = abc;
+                debug("LearningHelper started", DBMErrorLevel.Trace);
+            }
+            catch (Exception e2)
+            {
+                debug("learningHelper setupNewClass", getEngineVsEncounter(learningHelperClass), e2);
             }
         }
 
@@ -1088,10 +1272,13 @@ namespace FFXIVDBM.Plugin
                 try
                 {
                     implementationClass.processChatLine(chatLogEntry);
+                    inController = false;
                     implementationClass.onNewChatLine(chatLogEntry);
+                    inController = true;
                 }
                 catch (Exception e2)
                 {
+                    inController = true;
                     debug("processChatLine", getEngineVsEncounter(implementationClass), e2);
                 }
             }
@@ -1102,7 +1289,7 @@ namespace FFXIVDBM.Plugin
 
         #region utility
 
-        public static string getZoneDirectory()
+        public static string getScriptsDirectory()
         {
             Regex rgx = new Regex("[^a-zA-Z0-9 -]");
             string zoneName = rgx.Replace(zone.English, "");
@@ -1124,7 +1311,7 @@ namespace FFXIVDBM.Plugin
         {
             ignoreMobs = new List<string>();
 
-            string ignoreFile = getZoneDirectory() + Path.PathSeparator + "ignore.txt";
+            string ignoreFile = getScriptsDirectory() + Path.PathSeparator + "ignore.txt";
 
             if (File.Exists(ignoreFile))
             {
@@ -1155,7 +1342,7 @@ namespace FFXIVDBM.Plugin
                 var timeStampColor = Settings.Default.TimeStampColor.ToString();
                 DateTime now = DateTime.Now.ToUniversalTime();
                 string debugInfo = "): ";
-                string timeStamp = "[" + now.ToShortDateString() + " " + now.Hour + ":" + now.Minute + ":" + now.Second + ":" + now.Millisecond + "] ";
+                string timeStamp = "[" + now.ToShortDateString() + " " + now.Hour + ":" + now.Minute.ToString("D2") + ":" + now.Second.ToString("D2") + ":" + now.Millisecond.ToString("D3") + "] ";
                 string line = "";
 
                 if (ex != null)
@@ -1216,18 +1403,8 @@ namespace FFXIVDBM.Plugin
                             waveStream.Position = 0; // reset counter to start
 
 
-                            VoiceThroughNetAudio netAudio = new VoiceThroughNetAudio(waveStream, "WAV");
-                            //netAudio.Volume = 1;
-                            /*
-                            netAudio.PlaybackStop += delegate
-                            {
-                                try
-                                {
-                                    netAudio.Dispose();
-                                }
-                                catch { }
-                            };
-                            */
+                            VoiceThroughNetAudio netAudio = new VoiceThroughNetAudio(waveStream, "WAV", FFXIVAPP.Common.Constants.DefaultAudioDevice);
+
 
                             lock (TTSQueue)
                             {
@@ -1295,21 +1472,28 @@ namespace FFXIVDBM.Plugin
 
                         if (toPlay.TotalDuration > TimeSpan.FromSeconds(0.25))
                         {
-                            toPlay.Play();
-
-                            DateTime started = DateTime.Now;
-
-                            while (toPlay.TimePosition < toPlay.TotalDuration)
+                            try
                             {
-                                Thread.Sleep(50);
-                                if ((DateTime.Now - started).Duration() > toPlay.TotalDuration + TimeSpan.FromSeconds(2))
+                                toPlay.Play();
+
+                                DateTime started = DateTime.Now;
+
+                                while (toPlay.TimePosition < toPlay.TotalDuration)
                                 {
-                                    break;
+                                    Thread.Sleep(50);
+                                    if ((DateTime.Now - started).Duration() > toPlay.TotalDuration + TimeSpan.FromSeconds(2))
+                                    {
+                                        break;
+                                    }
                                 }
                             }
-
-                            toPlay.Dispose();
+                            catch (Exception e)
+                            {
+                                debug("TTSThread error: ", DBMErrorLevel.EngineErrors, e);
+                            }
                         }
+
+                        toPlay.Dispose();
                     }
                     catch (Exception ex)
                     {
@@ -1400,24 +1584,66 @@ namespace FFXIVDBM.Plugin
 
         #region DynamicClassLoading
 
-        public static void loadClassFile(string path)
+        public static void compileScripts()
+        {
+            string dir = getScriptsDirectory();
+
+            DirectoryInfo di = new DirectoryInfo(dir);
+
+            FileInfo[] files = di.GetFiles("*.cs");
+
+            if (implementationClass != null)
+            {
+                endEncounter();
+                implementationClass = null;
+            }
+
+
+
+            foreach (FileInfo fi in files)
+            {
+                if (File.Exists(fi.FullName))
+                {
+                    string key = Path.GetFileNameWithoutExtension(fi.FullName);
+
+                    if (!encounters.ContainsKey(key) || fi.LastWriteTimeUtc != classModified[key])
+                    {
+                        try
+                        {
+                            Assembly tmpAssembly = loadAssemblyFile(fi.FullName);
+
+                            if (tmpAssembly != null)
+                            {
+                                encounters[key] = tmpAssembly;
+                                classModified[key] = fi.LastWriteTimeUtc;
+
+                                debug("Compiled (" + fi.FullName + ".cs)", DBMErrorLevel.Notice);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            debug("Compile error (" + fi.FullName + "): ", DBMErrorLevel.EncounterErrors, e);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void setupClassAssembly()
         {
             try
             {
+                string language = CSharpCodeProvider.GetLanguageFromExtension(".cs");
 
-                string language = CSharpCodeProvider.GetLanguageFromExtension(
-                                     Path.GetExtension(path));
+                string extAssembly;
 
-                CodeDomProvider cdp = CodeDomProvider.CreateProvider(language);
-                CompilerParameters cp = new CompilerParameters();
-
+                cp = new CompilerParameters();
+                cdp = CodeDomProvider.CreateProvider(language);
                 cp.GenerateExecutable = false;
                 cp.GenerateInMemory = true;
 
                 cp.TreatWarningsAsErrors = false;
                 cp.IncludeDebugInformation = false;
-
-                string extAssembly;
 
 
 
@@ -1473,56 +1699,66 @@ namespace FFXIVDBM.Plugin
 
 
 
+            }
+            catch (Exception ex)
+            {
+                debug("Error initializing script compiler", DBMErrorLevel.EncounterErrors, ex);
+            }
 
-                CompilerResults cr = cdp.CompileAssemblyFromFile(cp, path);
+        }
 
-                if (cr.Errors.HasErrors)
+
+        private static Assembly loadAssemblyFile(string path)
+        {
+            int count = 0;
+            try
+            {
+                Exception e = null;
+
+                string[] source = new string[1];
+                source[0] = File.ReadAllText(path);
+
+                CompilerResults cr = null;
+                try
+                {
+                    cr = cdp.CompileAssemblyFromSource(cp, source);
+                    //CompilerResults cr = cdp.CompileAssemblyFromFile(cp, path);
+                }
+                catch (Exception ex2)
+                {
+                    debug("Error loading script (" + path + ")", DBMErrorLevel.EncounterErrors, e);
+                    e = ex2;
+                }
+
+                if (cr == null)
+                {
+
+                    return null;
+                }
+                else if (cr.Errors.HasErrors)
                 {
                     StringBuilder errors = new StringBuilder();
                     string filename = Path.GetFileName(path);
                     foreach (CompilerError err in cr.Errors)
                     {
+                        if (err.ErrorNumber == "CS1504")
+                        {
+                            //continue;
+                        }
                         errors.Append(string.Format("\r\n{0}({1},{2}): {3}: {4}",
                                     filename, err.Line, err.Column,
                                     err.ErrorNumber, err.ErrorText));
                     }
                     string str = "Error loading script\r\n" + errors.ToString();
-                    throw new ApplicationException(str);
-                }
-
-                IEncounter inst = findEntryPoint(cr.CompiledAssembly);
-                implementationClass = inst;
-                setupNewClass(inst);
-                debug("Encounter started (" + path + ")", DBMErrorLevel.Trace);
-
-                if (learningHelperClass != null)
-                {
-                    try
+                    if (count > 0)
                     {
-                        learningHelperClass.endEncounter();
-                        learningHelperClass.onEndEncounter();
+                        throw new ApplicationException(str);
                     }
-                    catch (Exception e2)
-                    {
-                        debug("learningHelper processChatLine", getEngineVsEncounter(learningHelperClass), e2);
-                    }
-                    learningHelperClass = null;
+                    return null;
                 }
+                
+                return cr.CompiledAssembly;
 
-                try
-                {
-                    refreshIgnoreMobsList();
-
-                    // Start learning helper for a new encounter
-                    LearningHelper abc = new LearningHelper();
-                    setupNewClass((IEncounter)abc);
-                    learningHelperClass = abc;
-                    debug("LearningHelper started", DBMErrorLevel.Trace);
-                }
-                catch (Exception e2)
-                {
-                    debug("learningHelper setupNewClass", getEngineVsEncounter(learningHelperClass), e2);
-                }
 
             }
             catch (Exception ex)
@@ -1530,6 +1766,7 @@ namespace FFXIVDBM.Plugin
                 debug("Error loading script (" + path + ")", DBMErrorLevel.EncounterErrors, ex);
             }
 
+            return null;
         }
 
         private static IEncounter findEntryPoint(Assembly assembly)
@@ -1547,6 +1784,8 @@ namespace FFXIVDBM.Plugin
 
             return null;
         }
+
+        
 
         private static Assembly OnCurrentDomainAssemblyResolve(object sender, ResolveEventArgs args)
         {

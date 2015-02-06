@@ -31,7 +31,7 @@ namespace FFXIVDBM.Plugin
 
         void setPhase(int phaseNum);
 
-        bool inController();
+        bool inController(bool? setTo = null);
 
     }
 }

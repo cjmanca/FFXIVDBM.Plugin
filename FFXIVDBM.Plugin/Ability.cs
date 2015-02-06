@@ -22,7 +22,7 @@ namespace FFXIVDBM.Plugin
         public bool matchRegex = true;
         public Regex match = null;
         public Dictionary<int,Dictionary<string, string>> lastMatch = new Dictionary<int,Dictionary<string,string>>();
-        public DateTime lastMatched = DateTime.Now;
+        public DateTime lastMatched = DateTime.MinValue;
 
         public MatchCallback matchCallback = null;
         public WarningCallback warningCallback = null;

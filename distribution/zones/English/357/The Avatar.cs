@@ -13,10 +13,10 @@ namespace TheAvatarEncounter
     public class MainEncounterLogic : AbilityController, IEncounter
     {
         // Settings
-        bool calloutDefensivePush = true;
-        bool calloutDefensivePushByName = false;
+        bool calloutDefensivePush;
+        bool calloutDefensivePushByName;
 
-        bool calloutTowerStrategy = true;
+        bool calloutTowerStrategy;
 
 
         public void onStartEncounter()
@@ -25,6 +25,10 @@ namespace TheAvatarEncounter
 
 
 
+            calloutDefensivePush = true;
+            calloutDefensivePushByName = false;
+
+            calloutTowerStrategy = true;
 
 
 

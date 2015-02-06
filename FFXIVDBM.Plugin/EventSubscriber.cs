@@ -173,6 +173,7 @@ namespace FFXIVDBM.Plugin
                 return;
             }
             var targetEntity = targetEntityEvent.TargetEntity;
+            EncounterController.targetEntity = targetEntity;
         }
 
         private static void OnNewPartyEntries(object sender, PartyEntitiesEvent partyEntitiesEvent)

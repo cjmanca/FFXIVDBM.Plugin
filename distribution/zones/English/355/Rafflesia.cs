@@ -24,7 +24,7 @@ namespace RafflesiaNS
 
             HoneyGlazed.match = new Regex("(?<beemember>[^ ]+?) [^ ]* suffers the effect of Honey-glazed");
             HoneyGlazed.matchMessage = "Bee is up";
-            HoneyGlazed.warningMessage = "${beemember} get devoured";
+            //HoneyGlazed.warningMessage = "${beemember} get devoured"; // no longer need to be devoured
             HoneyGlazed.timerDuration = TimeSpan.FromSeconds(25);
             HoneyGlazed.warningTime = TimeSpan.FromSeconds(0);
 
@@ -48,20 +48,7 @@ namespace RafflesiaNS
 
             timedAbilities.Add(Blighted);
 
-
-
-            /*
-            TriggeredAbility SwarmTriggered = new TriggeredAbility();
-
-            SwarmTriggered.match = new Regex("The rafflesia readies Swarm\\.");
-            SwarmTriggered.warningMessage = "Swarm soon";
-            SwarmTriggered.timerDuration = TimeSpan.FromSeconds(24);
-            SwarmTriggered.warningTime = TimeSpan.FromSeconds(0);
-
-            timedAbilities.Add(SwarmTriggered);
-            */
-
-
+            
 
 
 
@@ -161,15 +148,18 @@ namespace RafflesiaNS
 
 
             phases[phaseNum].phaseEndRegex = new Regex(@" readies Blighted Bouquet");
-            phases[phaseNum].phaseEndHP = 69;
+            //phases[phaseNum].phaseEndHP = 69;
             // Ends at 70, but also search for Blighted Bouquet, just in case
 
 
             phaseNum = 2;
             phases[phaseNum] = new Phase();
+            //phases[phaseNum].phaseStartDelay = TimeSpan.FromSeconds(3);
 
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(3), BloodyCaress);      // 19:50:18:571
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2.1051204), BlightedBouquet);      // 19:50:20:881
+            //phases[phaseNum].AddRotation(TimeSpan.FromSeconds(3), BloodyCaress);      // 19:50:18:571
+            //phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2.1051204), BlightedBouquet);      // 19:50:20:881
+
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), BlightedBouquet);      // 19:50:20:881
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(9.8725647), BriaryGrowth);      // 19:50:30:753
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(4.5852622), BloodyCaress);      // 19:50:35:339
 
@@ -195,6 +185,12 @@ namespace RafflesiaNS
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(6.3703643), BloodyCaress);      // 19:51:46:878
 
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(8), ThornyVine);              // 19:51:46:878
+
+
+            // moved these to the bottom of this rotation, so that blighted is right at the start
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(3), BloodyCaress);      // 19:50:18:571
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2.1051204), RotationAbility.Blank());      // 19:50:18:571
+
 
 
             phases[phaseNum].phaseEndRegex = new Regex(@" readies Leafstorm");

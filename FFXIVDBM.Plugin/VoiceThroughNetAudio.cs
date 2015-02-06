@@ -1,4 +1,4 @@
-﻿using FFXIVAPP.Common;
+﻿//using FFXIVAPP.Common;
 using NAudio.Wave;
 using System;
 using System.IO;
@@ -208,21 +208,21 @@ public class VoiceThroughNetAudio : IDisposable
         MP3,
         AIFF
     };
-    public VoiceThroughNetAudio(string FileName)
+    public VoiceThroughNetAudio(string FileName, Guid outputDevice)
     {
         if (!System.IO.File.Exists(FileName)) return;
 
         // Creating the interface class 
         //_waveOutDevice = new WaveOut();
 
-        if (Constants.DefaultAudioDevice == Guid.Empty)
+        if (outputDevice == Guid.Empty)
         {
             _waveOutDevice = new DirectSoundOut(100);
         }
         else
         {
-            LastAudioDevice = Constants.DefaultAudioDevice;
-            _waveOutDevice = new DirectSoundOut(Constants.DefaultAudioDevice, 100);
+            LastAudioDevice = outputDevice;
+            _waveOutDevice = new DirectSoundOut(outputDevice, 100);
         }
 
         try
@@ -264,7 +264,7 @@ public class VoiceThroughNetAudio : IDisposable
 
     private Guid LastAudioDevice { get; set; }
 
-    public VoiceThroughNetAudio(MemoryStream memStream, string typAsString)
+    public VoiceThroughNetAudio(MemoryStream memStream, string typAsString, Guid outputDevice)
     {
         m_memStream = memStream;
 
@@ -275,14 +275,14 @@ public class VoiceThroughNetAudio : IDisposable
         // Creating the interface class 
         //_waveOutDevice = new WaveOut();
 
-        if (Constants.DefaultAudioDevice == Guid.Empty)
+        if (outputDevice == Guid.Empty)
         {
             _waveOutDevice = new DirectSoundOut(100);
         }
         else
         {
-            LastAudioDevice = Constants.DefaultAudioDevice;
-            _waveOutDevice = new DirectSoundOut(Constants.DefaultAudioDevice, 100);
+            LastAudioDevice = outputDevice;
+            _waveOutDevice = new DirectSoundOut(outputDevice, 100);
         }
 
         try
