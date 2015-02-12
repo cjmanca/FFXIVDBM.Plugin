@@ -162,20 +162,35 @@ namespace FFXIVDBM.Plugin
             set
             {
                 bool newZone = false;
-                if (_zone != null && value != null &&_zone.Index != value.Index)
+                try
                 {
-                    newZone = true;
+                    if (_zone != null && value != null &&_zone.Index != value.Index)
+                    {
+                        newZone = true;
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    debug("zone property set error 1: ", DBMErrorLevel.EngineErrors, e);
                 }
 
                 _zone = value;
 
-                if (newZone)
+                try
                 {
-                    handleRemoveEntryName = "Zone change";
-                    endEncounter();
-                    handleRemoveEntryName = "";
-                    debug("Entered zone: " + _zone.Index);
-                    compileScripts();
+                    if (newZone)
+                    {
+                        handleRemoveEntryName = "Zone change";
+                        endEncounter();
+                        handleRemoveEntryName = "";
+                        debug("Entered zone: " + _zone.Index, DBMErrorLevel.Notice);
+                        compileScripts();
+                    }
+                }
+                catch (Exception e2)
+                {
+                    debug("zone property set error 2: ", DBMErrorLevel.EngineErrors, e2);
                 }
             }
         }
@@ -734,10 +749,10 @@ namespace FFXIVDBM.Plugin
 
         static void checkForRemovedAgro()
         {
-            List<uint> newEnmityList = playerEntity.EnmityEntries.Select(x => x.ID).ToList();
-
             try
             {
+                List<uint> newEnmityList = playerEntity.EnmityEntries.Select(x => x.ID).ToList();
+
                 // Duplicate the list first before looping through it, or we'll get exceptions when we try to remove entries from the original list
                 List<ActorEntity> tmpList = _agroList.ToList();
 
@@ -818,74 +833,128 @@ namespace FFXIVDBM.Plugin
 
         static void updateData(object sender, ElapsedEventArgs e)
         {
-            List<uint> diff = new List<uint>();
-
-            lock (updateLock)
+            try
             {
-                if (inUpdate || playerEntity == null)
-                {
-                    return;
-                }
-                if (!setupDone)
-                {
-                    trySetup();
-                    return;
-                }
-                // this ensures that we don't try to process more than one updateData at a time on slower computers. 
-                inUpdate = true;
-            }
+                List<uint> diff = new List<uint>();
 
-            lock (accessControl)
+                lock (updateLock)
+                {
+                    if (inUpdate || playerEntity == null)
+                    {
+                        return;
+                    }
+                    if (!setupDone)
+                    {
+                        trySetup();
+                        return;
+                    }
+                    // this ensures that we don't try to process more than one updateData at a time on slower computers. 
+                    inUpdate = true;
+                }
+
+                lock (accessControl)
+                {
+
+                    checkForNewMobs();
+                    checkForNewAgro();
+                    checkForRemovedMobs();
+                    checkForRemovedAgro();
+
+                    try
+                    {
+                        // cache the enmity list so we can compare next time to detect changes
+                        _enmityCached = playerEntity.EnmityEntries.ToList();
+                    }
+                    catch (Exception e2)
+                    {
+                        debug("updateData cache lists", DBMErrorLevel.EngineErrors, e2);
+                    }
+
+                }
+                inUpdate = false;
+            }
+            catch (Exception ex2)
             {
-
-                checkForNewMobs();
-                checkForNewAgro();
-                checkForRemovedMobs();
-                checkForRemovedAgro();
-
-                try
-                {
-                    // cache the enmity list so we can compare next time to detect changes
-                    _enmityCached = playerEntity.EnmityEntries.ToList();
-                }
-                catch (Exception e2)
-                {
-                    debug("updateData cache lists", DBMErrorLevel.EngineErrors, e2);
-                }
-
+                debug("updateData error: ", DBMErrorLevel.EngineErrors, ex2);
             }
-            inUpdate = false;
         }
 
         static void tickTimerEvent(object sender, ElapsedEventArgs e)
         {
-            lock (tickLock)
+            try
             {
-                if (inTick || playerEntity == null || mobList == null || !setupDone)
+                lock (tickLock)
                 {
-                    return;
+                    if (inTick || playerEntity == null || mobList == null || !setupDone)
+                    {
+                        return;
+                    }
+                    // this ensures that we don't try to process more than one tick at a time on slower computers. Not likely to happen though
+                    inTick = true;
                 }
-                // this ensures that we don't try to process more than one tick at a time on slower computers. Not likely to happen though
-                inTick = true;
+
+
+
+
+                lock (accessControl)
+                {
+
+                    // call the tick events for both the learning helper and the encounter script controllers
+                    if (learningHelperClass != null)
+                    {
+                        try
+                        {
+                            learningHelperClass.tick();
+                            learningHelperClass.onTick();
+                        }
+                        catch (Exception e2)
+                        {
+                            debug("learningHelper tick", getEngineVsEncounter(learningHelperClass), e2);
+                        }
+                    }
+
+                    if (implementationClass != null)
+                    {
+                        try
+                        {
+                            implementationClass.tick();
+                            inController = false;
+                            implementationClass.onTick();
+                            inController = true;
+                        }
+                        catch (Exception e2)
+                        {
+                            debug("tick", getEngineVsEncounter(implementationClass), e2);
+                        }
+                    }
+                }
+
+                inTick = false;
             }
-
-
-
-
-            lock (accessControl)
+            catch (Exception ex2)
             {
+                debug("tickTimerEvent error: ", DBMErrorLevel.EngineErrors, ex2);
+            }
+        }
 
-                // call the tick events for both the learning helper and the encounter script controllers
+
+        public static void handleRemove(ActorEntity cachedEntity, ActorEntity currentEntity)
+        {
+            try
+            {
+                //debug("Removed Mob: " + currentEntity.Name + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ", " + (currentEntity.IsClaimed ? "claimed" : "not claimed") + ", by id: " + currentEntity.ClaimedByID + ")", DBMErrorLevel.Trace);
+                                       
+                _mobCached.Remove(cachedEntity);
+
                 if (learningHelperClass != null)
                 {
                     try
                     {
-                        learningHelperClass.tick();
-                        learningHelperClass.onTick();
+                        learningHelperClass.onMobRemoved(cachedEntity);
                     }
                     catch (Exception e2)
                     {
-                        debug("learningHelper tick", getEngineVsEncounter(learningHelperClass), e2);
+                        debug("learningHelper onMobRemoved", getEngineVsEncounter(learningHelperClass), e2);
                     }
                 }
 
@@ -893,241 +962,236 @@ namespace FFXIVDBM.Plugin
                 {
                     try
                     {
-                        implementationClass.tick();
+                        if (currentEntity == null)
+                        {
+                            debug("Removed Mob: " + cachedEntity.Name + " ID: " + cachedEntity.ID + " NPCID1: " + cachedEntity.NPCID1 + " NPCID2: " + cachedEntity.NPCID2 + " (" + handleRemoveEntry + ", null)", DBMErrorLevel.Trace);
+                        }
+                        else
+                        {
+                            debug("Removed Mob: " + currentEntity.Name + " ID: " + currentEntity.ID + " NPCID1: " + currentEntity.NPCID1 + " NPCID2: " + currentEntity.NPCID2 + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ")", DBMErrorLevel.Trace);
+                        }
                         inController = false;
-                        implementationClass.onTick();
+                        implementationClass.onMobRemoved(cachedEntity);
                         inController = true;
                     }
                     catch (Exception e2)
                     {
-                        debug("tick", getEngineVsEncounter(implementationClass), e2);
+                        debug("onMobRemoved", getEngineVsEncounter(implementationClass), e2);
                     }
                 }
             }
-
-            inTick = false;
-        }
-
-
-        public static void handleRemove(ActorEntity cachedEntity, ActorEntity currentEntity)
-        {
-            //debug("Removed Mob: " + currentEntity.Name + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ", " + (currentEntity.IsClaimed ? "claimed" : "not claimed") + ", by id: " + currentEntity.ClaimedByID + ")", DBMErrorLevel.Trace);
-                                       
-            _mobCached.Remove(cachedEntity);
-
-            if (learningHelperClass != null)
+            catch (Exception ex2)
             {
-                try
-                {
-                    learningHelperClass.onMobRemoved(cachedEntity);
-                }
-                catch (Exception e2)
-                {
-                    debug("learningHelper onMobRemoved", getEngineVsEncounter(learningHelperClass), e2);
-                }
-            }
-
-            if (implementationClass != null)
-            {
-                try
-                {
-                    if (currentEntity == null)
-                    {
-                        debug("Removed Mob: " + cachedEntity.Name + " ID: " + cachedEntity.ID + " NPCID1: " + cachedEntity.NPCID1 + " NPCID2: " + cachedEntity.NPCID2 + " (" + handleRemoveEntry + ", null)", DBMErrorLevel.Trace);
-                    }
-                    else
-                    {
-                        debug("Removed Mob: " + currentEntity.Name + " ID: " + currentEntity.ID + " NPCID1: " + currentEntity.NPCID1 + " NPCID2: " + currentEntity.NPCID2 + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ")", DBMErrorLevel.Trace);
-                    }
-                    inController = false;
-                    implementationClass.onMobRemoved(cachedEntity);
-                    inController = true;
-                }
-                catch (Exception e2)
-                {
-                    debug("onMobRemoved", getEngineVsEncounter(implementationClass), e2);
-                }
+                debug("handleRemove error: ", DBMErrorLevel.EngineErrors, ex2);
             }
         }
 
         public static void handleRemoveAgro(ActorEntity cachedEntity, ActorEntity currentEntity)
         {
-            if (currentEntity == null)
+            try
             {
-                debug("Removed Agro: " + cachedEntity.Name + " (" + handleRemoveEntry + ", null)", DBMErrorLevel.Trace);
-            }
-            else
-            {
-                debug("Removed Agro: " + currentEntity.Name + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ", " + (currentEntity.IsClaimed ? "claimed" : "not claimed") + ", by id: " + currentEntity.ClaimedByID + ")", DBMErrorLevel.Trace);
-            }
-            _agroList.Remove(cachedEntity);
-
-            if (learningHelperClass != null)
-            {
-                try
+                if (currentEntity == null)
                 {
-                    learningHelperClass.onAgroRemoved(cachedEntity);
+                    debug("Removed Agro: " + cachedEntity.Name + " (" + handleRemoveEntry + ", null)", DBMErrorLevel.Trace);
                 }
-                catch (Exception e2)
+                else
                 {
-                    debug("learningHelper onAgroRemoved", getEngineVsEncounter(learningHelperClass), e2);
+                    debug("Removed Agro: " + currentEntity.Name + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ", " + (currentEntity.IsClaimed ? "claimed" : "not claimed") + ", by id: " + currentEntity.ClaimedByID + ")", DBMErrorLevel.Trace);
+                }
+                _agroList.Remove(cachedEntity);
+
+                if (learningHelperClass != null)
+                {
+                    try
+                    {
+                        learningHelperClass.onAgroRemoved(cachedEntity);
+                    }
+                    catch (Exception e2)
+                    {
+                        debug("learningHelper onAgroRemoved", getEngineVsEncounter(learningHelperClass), e2);
+                    }
+                }
+
+                if (implementationClass != null)
+                {
+                    try
+                    {
+                        inController = false;
+                        implementationClass.onAgroRemoved(cachedEntity);
+                        inController = true;
+                    }
+                    catch (Exception e2)
+                    {
+                        debug("onAgroRemoved", getEngineVsEncounter(implementationClass), e2);
+                        inController = true;
+                    }
+                }
+
+
+                if (encounterStarted && !_agroList.Any())
+                {
+                    endEncounter();
                 }
             }
-
-            if (implementationClass != null)
+            catch (Exception ex2)
             {
-                try
-                {
-                    inController = false;
-                    implementationClass.onAgroRemoved(cachedEntity);
-                    inController = true;
-                }
-                catch (Exception e2)
-                {
-                    debug("onAgroRemoved", getEngineVsEncounter(implementationClass), e2);
-                    inController = true;
-                }
-            }
-
-
-            if (encounterStarted && !_agroList.Any())
-            {
-                endEncounter();
+                debug("handleRemoveAgro error: ", DBMErrorLevel.EngineErrors, ex2);
             }
         }
 
 
         public static void endEncounter()
         {
-            if (learningHelperClass != null)
+            try
             {
-                try
+                if (learningHelperClass != null)
                 {
-                    learningHelperClass.endEncounter();
-                    learningHelperClass.onEndEncounter();
+                    try
+                    {
+                        learningHelperClass.endEncounter();
+                        learningHelperClass.onEndEncounter();
+                    }
+                    catch (Exception e2)
+                    {
+                        debug("learningHelper endEncounter", getEngineVsEncounter(learningHelperClass), e2);
+                    }
+                    learningHelperClass = null;
                 }
-                catch (Exception e2)
-                {
-                    debug("learningHelper endEncounter", getEngineVsEncounter(learningHelperClass), e2);
-                }
-                learningHelperClass = null;
-            }
 
-            if (implementationClass != null)
-            {
-                debug("endEncounter removed " + handleRemoveEntryName + "(" + handleRemoveEntry + ")", DBMErrorLevel.Trace);
-                try
+                if (implementationClass != null)
                 {
-                    inController = false;
-                    implementationClass.endEncounter();
-                    implementationClass.onEndEncounter();
-                    inController = true;
+                    debug("endEncounter removed " + handleRemoveEntryName + "(" + handleRemoveEntry + ")", DBMErrorLevel.Trace);
+                    try
+                    {
+                        inController = false;
+                        implementationClass.endEncounter();
+                        implementationClass.onEndEncounter();
+                        inController = true;
+                    }
+                    catch (Exception e2)
+                    {
+                        debug("endEncounter", getEngineVsEncounter(implementationClass), e2);
+                        inController = true;
+                    }
+                    implementationClass = null;
                 }
-                catch (Exception e2)
-                {
-                    debug("endEncounter", getEngineVsEncounter(implementationClass), e2);
-                    inController = true;
-                }
-                implementationClass = null;
+                _agroList.Clear();
+                _enmityCached.Clear();
+                _mobCached.Clear();
+                encounterStarted = false;
             }
-            _agroList.Clear();
-            _enmityCached.Clear();
-            _mobCached.Clear();
-            encounterStarted = false;
+            catch (Exception ex2)
+            {
+                debug("endEncounter error: ", DBMErrorLevel.EngineErrors, ex2);
+            }
         }
         
 
         public static void setupNewClass(IEncounter inst)
         {
-            encounterStarted = true;
             try
             {
-                inController = false;
-                inst.onStartEncounter();
-                inController = true;
-            }
-            catch (Exception e2)
-            {
-                debug("onStartEncounter", getEngineVsEncounter(inst), e2);
-                inController = true;
-            }
-
-            try
-            {
-                inst.setPhase(1);
-            }
-            catch (Exception e2)
-            {
-                debug("setPhase", getEngineVsEncounter(inst), e2);
-            }
-
-
-            foreach (ActorEntity tmpEnt in _agroList)
-            {
+                encounterStarted = true;
                 try
                 {
                     inController = false;
-                    inst.onMobAgro(tmpEnt);
+                    inst.onStartEncounter();
                     inController = true;
                 }
                 catch (Exception e2)
                 {
-                    debug("onMobAgro", getEngineVsEncounter(inst), e2);
+                    debug("onStartEncounter", getEngineVsEncounter(inst), e2);
                     inController = true;
                 }
-                try
-                {
-                    inst.bossCheck(tmpEnt);
-                }
-                catch (Exception e2)
-                {
-                    debug("bossCheck", getEngineVsEncounter(inst), e2);
-                }
-            }
 
-            foreach (ActorEntity tmpEnt in _mobCached)
-            {
                 try
                 {
-                    if (inst == implementationClass)
+                    inst.setPhase(1);
+                }
+                catch (Exception e2)
+                {
+                    debug("setPhase", getEngineVsEncounter(inst), e2);
+                }
+
+
+                foreach (ActorEntity tmpEnt in _agroList)
+                {
+                    try
                     {
-                        debug("Added Mob (Setup): " + tmpEnt.Name + " ID: " + tmpEnt.ID + " NPCID1: " + tmpEnt.NPCID1 + " NPCID2: " + tmpEnt.NPCID2, DBMErrorLevel.Trace);
+                        inController = false;
+                        inst.onMobAgro(tmpEnt);
+                        inController = true;
                     }
-                    inController = false;
-                    inst.onMobAdded(tmpEnt);
-                    inController = true;
+                    catch (Exception e2)
+                    {
+                        debug("onMobAgro", getEngineVsEncounter(inst), e2);
+                        inController = true;
+                    }
+                    try
+                    {
+                        inst.bossCheck(tmpEnt);
+                    }
+                    catch (Exception e2)
+                    {
+                        debug("bossCheck", getEngineVsEncounter(inst), e2);
+                    }
                 }
-                catch (Exception e2)
+
+                foreach (ActorEntity tmpEnt in _mobCached)
                 {
-                    debug("onMobAdded", getEngineVsEncounter(inst), e2);
+                    try
+                    {
+                        if (inst == implementationClass)
+                        {
+                            debug("Added Mob (Setup): " + tmpEnt.Name + " ID: " + tmpEnt.ID + " NPCID1: " + tmpEnt.NPCID1 + " NPCID2: " + tmpEnt.NPCID2, DBMErrorLevel.Trace);
+                        }
+                        inController = false;
+                        inst.onMobAdded(tmpEnt);
+                        inController = true;
+                    }
+                    catch (Exception e2)
+                    {
+                        debug("onMobAdded", getEngineVsEncounter(inst), e2);
+                    }
                 }
+            }
+            catch (Exception ex2)
+            {
+                debug("setupNewClass error: ", DBMErrorLevel.EngineErrors, ex2);
             }
         }
 
         public static bool checkRecompile(string mobNameRaw)
         {
-            // No encounter script loaded. Lets see if we have one that matches this mob
-            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
-            string mobName = rgx.Replace(mobNameRaw, "");
-
-            string dir = getScriptsDirectory();
-
-            FileInfo fi = new FileInfo(dir + @"\" + mobName + ".cs");
-
-            if (classModified.ContainsKey(mobName))
+            try
             {
+                // No encounter script loaded. Lets see if we have one that matches this mob
+                Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+                string mobName = rgx.Replace(mobNameRaw, "");
 
-                if (fi.LastWriteTimeUtc != classModified[mobName])
+                string dir = getScriptsDirectory();
+
+                FileInfo fi = new FileInfo(dir + @"\" + mobName + ".cs");
+
+                if (classModified.ContainsKey(mobName))
                 {
-                    endEncounter();
 
+                    if (fi.LastWriteTimeUtc != classModified[mobName])
+                    {
+                        endEncounter();
+
+                        compileScripts();
+                        return true;
+                    }
+                }
+                else if (fi.Exists)
+                {
                     compileScripts();
-                    return true;
                 }
             }
-            else if (fi.Exists)
+            catch (Exception ex2)
             {
-                compileScripts();
+                debug("checkRecompile error: ", DBMErrorLevel.EngineErrors, ex2);
             }
 
             return false;
@@ -1291,78 +1355,109 @@ namespace FFXIVDBM.Plugin
 
         public static string getScriptsDirectory()
         {
-            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
-            string zoneName = rgx.Replace(zone.English, "");
-
-            string dir = Constants.BaseDirectory + @"\zones\" + Constants.GameLanguage + @"\" + zone.Index;
-
-            encounterZonePath = dir;
-
-            if (!Directory.Exists(dir))
+            try
             {
-                Directory.CreateDirectory(dir);
-                File.WriteAllText(dir + "\\" + zoneName + ".txt", zone.English);
+                Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+                string zoneName = rgx.Replace(zone.English, "");
+
+                string dir = Constants.BaseDirectory + @"\zones\" + Constants.GameLanguage + @"\" + zone.Index;
+
+                encounterZonePath = dir;
+
+                if (!Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                    File.WriteAllText(dir + "\\" + zoneName + ".txt", zone.English);
+                }
+
+                return dir;
+            }
+            catch (Exception ex2)
+            {
+                debug("getEngineVsEncounter error: ", DBMErrorLevel.EngineErrors, ex2);
             }
 
-            return dir;
+            return "";
         }
 
         public static void refreshIgnoreMobsList()
         {
-            ignoreMobs = new List<string>();
-
-            string ignoreFile = getScriptsDirectory() + Path.PathSeparator + "ignore.txt";
-
-            if (File.Exists(ignoreFile))
+            try
             {
-                string[] lines = File.ReadAllLines(ignoreFile);
-                foreach (string line in lines)
+                ignoreMobs = new List<string>();
+
+                string ignoreFile = getScriptsDirectory() + Path.PathSeparator + "ignore.txt";
+
+                if (File.Exists(ignoreFile))
                 {
-                    if (line.Trim().Length > 0)
+                    string[] lines = File.ReadAllLines(ignoreFile);
+                    foreach (string line in lines)
                     {
-                        ignoreMobs.Add(line.Trim());
+                        if (line.Trim().Length > 0)
+                        {
+                            ignoreMobs.Add(line.Trim());
+                        }
                     }
                 }
+            }
+            catch (Exception ex2)
+            {
+                debug("refreshIgnoreMobsList error: ", DBMErrorLevel.EngineErrors, ex2);
             }
         }
 
         private static DBMErrorLevel getEngineVsEncounter(IEncounter controller)
         {
-            if (controller == null)
+            try
             {
-                return DBMErrorLevel.EngineErrors;
+                if (controller == null)
+                {
+                    return DBMErrorLevel.EngineErrors;
+                }
+                return (controller.inController() ? DBMErrorLevel.EngineErrors : DBMErrorLevel.EncounterErrors);
             }
-            return (controller.inController() ? DBMErrorLevel.EngineErrors : DBMErrorLevel.EncounterErrors);
+            catch (Exception ex2)
+            {
+                debug("getEngineVsEncounter error: ", DBMErrorLevel.EngineErrors, ex2);
+            }
+            return DBMErrorLevel.EngineErrors;
         }
 
         public static void debug(string message, DBMErrorLevel level = DBMErrorLevel.EncounterErrors, Exception ex = null)
         {
-            if (level >= errorLevel)
+            try
             {
-                var timeStampColor = Settings.Default.TimeStampColor.ToString();
-                DateTime now = DateTime.Now.ToUniversalTime();
-                string debugInfo = "): ";
-                string timeStamp = "[" + now.ToShortDateString() + " " + now.Hour + ":" + now.Minute.ToString("D2") + ":" + now.Second.ToString("D2") + ":" + now.Millisecond.ToString("D3") + "] ";
-                string line = "";
-
-                if (ex != null)
+                if (level >= errorLevel)
                 {
-                    StackTrace st = new StackTrace(ex, true);
-                    // Get the top stack frame
-                    StackFrame frame = st.GetFrame(0);
+                    var timeStampColor = Settings.Default.TimeStampColor.ToString();
+                    DateTime now = DateTime.Now.ToUniversalTime();
+                    string debugInfo = "): ";
+                    string timeStamp = "[" + now.ToShortDateString() + " " + now.Hour + ":" + now.Minute.ToString("D2") + ":" + now.Second.ToString("D2") + ":" + now.Millisecond.ToString("D3") + "] ";
+                    string line = "";
 
-                    debugInfo = ":" + frame.GetFileName() + ":" + frame.GetMethod() + ":" + frame.GetFileLineNumber() + ":" + frame.GetFileColumnNumber() + ": " + ex.Message + "): ";
+                    if (ex != null)
+                    {
+                        StackTrace st = new StackTrace(ex, true);
+                        // Get the top stack frame
+                        StackFrame frame = st.GetFrame(0);
+
+                        debugInfo = ":" + frame.GetFileName() + ":" + frame.GetMethod() + ":" + frame.GetFileLineNumber() + ":" + frame.GetFileColumnNumber() + ": " + ex.Message + "): ";
+                    }
+
+
+                    line = timeStamp + "(" + Enum.GetName(typeof(DBMErrorLevel),level) + debugInfo + message;
+
+                    File.AppendAllText(debugLogPath, line + Environment.NewLine);
+
+                    FFXIVAPP.Common.Constants.FD.AppendFlow(timeStamp, "", line, new[]
+                    {
+                        timeStampColor, "#FFFFFF"
+                    }, MainView.View.ChatLogFD._FDR);
                 }
-
-
-                line = timeStamp + "(" + Enum.GetName(typeof(DBMErrorLevel),level) + debugInfo + message;
-
-                File.AppendAllText(debugLogPath, line + Environment.NewLine);
-
-                FFXIVAPP.Common.Constants.FD.AppendFlow(timeStamp, "", line, new[]
-                {
-                    timeStampColor, "#FFFFFF"
-                }, MainView.View.ChatLogFD._FDR);
+            }
+            catch (Exception ex2)
+            {
+                debug("TTSThread Error 4", DBMErrorLevel.EngineErrors, ex2);
             }
         }
 
@@ -1383,44 +1478,49 @@ namespace FFXIVDBM.Plugin
 
                 try
                 {
-                    SpeechSynthesizer m_speechSynth = new SpeechSynthesizer();
-                    m_speechSynth.Volume = speechVolume;
-                    //m_speechSynth.Rate = 2;
-
-                    MemoryStream waveStream = new MemoryStream();
-                    m_speechSynth.SetOutputToWaveStream(waveStream);
-                    m_speechSynth.SpeakAsync(toRead);
-                    m_speechSynth.SpeakCompleted += delegate
+                    using (SpeechSynthesizer m_speechSynth = new SpeechSynthesizer())
                     {
-                        try
+                        m_speechSynth.Volume = speechVolume;
+                        //m_speechSynth.Rate = 2;
+
+                        MemoryStream waveStream = new MemoryStream();
+                        m_speechSynth.SetOutputToWaveStream(waveStream);
+
+                        //m_speechSynth.SpeakAsync(toRead);
+                        //m_speechSynth.SpeakCompleted += delegate
+
+                        m_speechSynth.Speak(toRead);
+                        //m_speechSynth.SpeakCompleted += delegate
                         {
-                            m_speechSynth.SetOutputToNull();
-                            m_speechSynth.Dispose();
-                            m_speechSynth = null;
-
-                            speaking = false;
-
-                            waveStream.Position = 0; // reset counter to start
-
-
-                            VoiceThroughNetAudio netAudio = new VoiceThroughNetAudio(waveStream, "WAV", FFXIVAPP.Common.Constants.DefaultAudioDevice);
-
-
-                            lock (TTSQueue)
+                            try
                             {
-                                TTSQueue.Add(netAudio);
+                                m_speechSynth.SetOutputToNull();
+
+                                waveStream.Position = 0; // reset counter to start
+
+
+                                VoiceThroughNetAudio netAudio = new VoiceThroughNetAudio(waveStream, "WAV", FFXIVAPP.Common.Constants.DefaultAudioDevice);
+
+
+                                lock (TTSQueue)
+                                {
+                                    TTSQueue.Add(netAudio);
+                                }
+
                             }
-                        }
-                        catch(Exception ex)
-                        {
-                            debug("SpeakCompleted", DBMErrorLevel.EngineErrors, ex);
-                        }
-                    };
+                            catch (Exception ex)
+                            {
+                                debug("SpeakCompleted", DBMErrorLevel.EngineErrors, ex);
+                            }
+                        };
+                    }
                 }
                 catch(Exception ex)
                 {
                     debug("tts", DBMErrorLevel.EngineErrors, ex);
                 }
+
+                speaking = false;
             }
             catch
             {
@@ -1433,76 +1533,88 @@ namespace FFXIVDBM.Plugin
         
         public static void TTSThread()
         {
-            VoiceThroughNetAudio toPlay;
+            VoiceThroughNetAudio toPlay = null;
 
             while (true)
             {
                 bool any = false;
-
-
+                
                 try
-                {
-                    lock (TTSQueue)
-                    {
-                            any = TTSQueue.Any();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    debug("TTSThread 1", DBMErrorLevel.EngineErrors, ex);
-                }
-
-                if (any) // something in queue
                 {
                     try
                     {
-                        //MessageBox.Show("test");
                         lock (TTSQueue)
                         {
-                            if (TTSQueue.Any()) // could have changed between our locks
-                            {
-                                toPlay = TTSQueue.First();
-                                TTSQueue.Remove(toPlay);
-                            }
-                            else
-                            {
-                                continue;
-                            }
+                                any = TTSQueue.Any();
                         }
-
-                        if (toPlay.TotalDuration > TimeSpan.FromSeconds(0.25))
-                        {
-                            try
-                            {
-                                toPlay.Play();
-
-                                DateTime started = DateTime.Now;
-
-                                while (toPlay.TimePosition < toPlay.TotalDuration)
-                                {
-                                    Thread.Sleep(50);
-                                    if ((DateTime.Now - started).Duration() > toPlay.TotalDuration + TimeSpan.FromSeconds(2))
-                                    {
-                                        break;
-                                    }
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                debug("TTSThread error: ", DBMErrorLevel.EngineErrors, e);
-                            }
-                        }
-
-                        toPlay.Dispose();
                     }
                     catch (Exception ex)
                     {
-                        debug("TTSThread 2", DBMErrorLevel.EngineErrors, ex);
+                        debug("TTSThread Error 1", DBMErrorLevel.EngineErrors, ex);
                     }
-                }
-                else
-                {
+
+                    if (any) // something in queue
+                    {
+                        try
+                        {
+                            //MessageBox.Show("test");
+                            lock (TTSQueue)
+                            {
+                                if (TTSQueue.Any()) // could have changed between our locks
+                                {
+                                    toPlay = TTSQueue.First();
+                                    TTSQueue.Remove(toPlay);
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+                            }
+
+                            if (toPlay.TotalDuration > TimeSpan.FromSeconds(0.25))
+                            {
+                                try
+                                {
+                                    toPlay.Play();
+
+                                    DateTime started = DateTime.Now;
+
+                                    while (toPlay.TimePosition < toPlay.TotalDuration)
+                                    {
+                                        Thread.Sleep(50);
+                                        if ((DateTime.Now - started).Duration() > toPlay.TotalDuration + TimeSpan.FromSeconds(2))
+                                        {
+                                            break;
+                                        }
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    debug("TTSThread Error 2: ", DBMErrorLevel.EngineErrors, e);
+                                }
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            debug("TTSThread Error 3", DBMErrorLevel.EngineErrors, ex);
+                        }
+                        finally
+                        {
+                            if (toPlay != null)
+                            {
+                                toPlay.Dispose();
+                            }
+                        }
+
+                        Thread.Sleep(50);
+                    }
+
                     Thread.Sleep(50);
+                }
+                catch (Exception ex)
+                {
+                    debug("TTSThread Error 4", DBMErrorLevel.EngineErrors, ex);
                 }
             }
         }
@@ -1520,62 +1632,69 @@ namespace FFXIVDBM.Plugin
 
         public static void copyActorEntity(ActorEntity fromEntity, ref ActorEntity toEntity)
         {
-            ActorEntity tmpEnt = fromEntity;
-            ActorEntity tmpActor = toEntity;
-
-            tmpActor.ActionStatus = tmpEnt.ActionStatus;
-            tmpActor.CastingID = tmpEnt.CastingID;
-            tmpActor.CastingProgress = tmpEnt.CastingProgress;
-            tmpActor.CastingTargetID = tmpEnt.CastingTargetID;
-            tmpActor.CastingTime = tmpEnt.CastingTime;
-            tmpActor.ClaimedByID = tmpEnt.ClaimedByID;
-            tmpActor.Coordinate = tmpEnt.Coordinate;
-            tmpActor.CPCurrent = tmpEnt.CPCurrent;
-            tmpActor.CPMax = tmpEnt.CPMax;
-            tmpActor.Distance = tmpEnt.Distance;
-            tmpActor.Fate = tmpEnt.Fate;
-            tmpActor.GatheringInvisible = tmpEnt.GatheringInvisible;
-            tmpActor.GatheringStatus = tmpEnt.GatheringStatus;
-            tmpActor.GPCurrent = tmpEnt.GPCurrent;
-            tmpActor.GPMax = tmpEnt.GPMax;
-            tmpActor.GrandCompany = tmpEnt.GrandCompany;
-            tmpActor.GrandCompanyRank = tmpEnt.GrandCompanyRank;
-            tmpActor.Heading = tmpEnt.Heading;
-            tmpActor.HPCurrent = tmpEnt.HPCurrent;
-            tmpActor.HPMax = tmpEnt.HPMax;
-            tmpActor.Icon = tmpEnt.Icon;
-            tmpActor.ID = tmpEnt.ID;
-            tmpActor.IsCasting = tmpEnt.IsCasting;
-            tmpActor.IsGM = tmpEnt.IsGM;
-            tmpActor.Job = tmpEnt.Job;
-            tmpActor.Level = tmpEnt.Level;
-            tmpActor.MapIndex = tmpEnt.MapIndex;
-            tmpActor.ModelID = tmpEnt.ModelID;
-            tmpActor.MPCurrent = tmpEnt.MPCurrent;
-            tmpActor.MPMax = tmpEnt.MPMax;
-            tmpActor.Name = tmpEnt.Name;
-            tmpActor.NPCID1 = tmpEnt.NPCID1;
-            tmpActor.NPCID2 = tmpEnt.NPCID2;
-            tmpActor.OwnerID = tmpEnt.OwnerID;
-            tmpActor.Race = tmpEnt.Race;
-            tmpActor.Sex = tmpEnt.Sex;
-            tmpActor.Status = tmpEnt.Status;
-            tmpActor.TargetID = tmpEnt.TargetID;
-            tmpActor.TargetType = tmpEnt.TargetType;
-            tmpActor.Title = tmpEnt.Title;
-            tmpActor.TPCurrent = tmpEnt.TPCurrent;
-            tmpActor.TPMax = tmpEnt.TPMax;
-            tmpActor.Type = tmpEnt.Type;
-            tmpActor.X = tmpEnt.X;
-            tmpActor.Y = tmpEnt.Y;
-            tmpActor.Z = tmpEnt.Z;
-
-
-            tmpActor.StatusEntries.Clear();
-
-            foreach (StatusEntry se in tmpEnt.StatusEntries)
+            try
             {
-                tmpActor.StatusEntries.Add(se);
+                ActorEntity tmpEnt = fromEntity;
+                ActorEntity tmpActor = toEntity;
+
+                tmpActor.ActionStatus = tmpEnt.ActionStatus;
+                tmpActor.CastingID = tmpEnt.CastingID;
+                tmpActor.CastingProgress = tmpEnt.CastingProgress;
+                tmpActor.CastingTargetID = tmpEnt.CastingTargetID;
+                tmpActor.CastingTime = tmpEnt.CastingTime;
+                tmpActor.ClaimedByID = tmpEnt.ClaimedByID;
+                tmpActor.Coordinate = tmpEnt.Coordinate;
+                tmpActor.CPCurrent = tmpEnt.CPCurrent;
+                tmpActor.CPMax = tmpEnt.CPMax;
+                tmpActor.Distance = tmpEnt.Distance;
+                tmpActor.Fate = tmpEnt.Fate;
+                tmpActor.GatheringInvisible = tmpEnt.GatheringInvisible;
+                tmpActor.GatheringStatus = tmpEnt.GatheringStatus;
+                tmpActor.GPCurrent = tmpEnt.GPCurrent;
+                tmpActor.GPMax = tmpEnt.GPMax;
+                tmpActor.GrandCompany = tmpEnt.GrandCompany;
+                tmpActor.GrandCompanyRank = tmpEnt.GrandCompanyRank;
+                tmpActor.Heading = tmpEnt.Heading;
+                tmpActor.HPCurrent = tmpEnt.HPCurrent;
+                tmpActor.HPMax = tmpEnt.HPMax;
+                tmpActor.Icon = tmpEnt.Icon;
+                tmpActor.ID = tmpEnt.ID;
+                tmpActor.IsCasting = tmpEnt.IsCasting;
+                tmpActor.IsGM = tmpEnt.IsGM;
+                tmpActor.Job = tmpEnt.Job;
+                tmpActor.Level = tmpEnt.Level;
+                tmpActor.MapIndex = tmpEnt.MapIndex;
+                tmpActor.ModelID = tmpEnt.ModelID;
+                tmpActor.MPCurrent = tmpEnt.MPCurrent;
+                tmpActor.MPMax = tmpEnt.MPMax;
+                tmpActor.Name = tmpEnt.Name;
+                tmpActor.NPCID1 = tmpEnt.NPCID1;
+                tmpActor.NPCID2 = tmpEnt.NPCID2;
+                tmpActor.OwnerID = tmpEnt.OwnerID;
+                tmpActor.Race = tmpEnt.Race;
+                tmpActor.Sex = tmpEnt.Sex;
+                tmpActor.Status = tmpEnt.Status;
+                tmpActor.TargetID = tmpEnt.TargetID;
+                tmpActor.TargetType = tmpEnt.TargetType;
+                tmpActor.Title = tmpEnt.Title;
+                tmpActor.TPCurrent = tmpEnt.TPCurrent;
+                tmpActor.TPMax = tmpEnt.TPMax;
+                tmpActor.Type = tmpEnt.Type;
+                tmpActor.X = tmpEnt.X;
+                tmpActor.Y = tmpEnt.Y;
+                tmpActor.Z = tmpEnt.Z;
+
+
+                tmpActor.StatusEntries.Clear();
+
+                foreach (StatusEntry se in tmpEnt.StatusEntries)
+                {
+                    tmpActor.StatusEntries.Add(se);
+                }
+            }
+            catch (Exception ex)
+            {
+                debug("Error copyActorEntity", DBMErrorLevel.EngineErrors, ex);
             }
 
         }
@@ -1586,46 +1705,53 @@ namespace FFXIVDBM.Plugin
 
         public static void compileScripts()
         {
-            string dir = getScriptsDirectory();
-
-            DirectoryInfo di = new DirectoryInfo(dir);
-
-            FileInfo[] files = di.GetFiles("*.cs");
-
-            if (implementationClass != null)
+            try
             {
-                endEncounter();
-                implementationClass = null;
-            }
+                string dir = getScriptsDirectory();
 
+                DirectoryInfo di = new DirectoryInfo(dir);
 
+                FileInfo[] files = di.GetFiles("*.cs");
 
-            foreach (FileInfo fi in files)
-            {
-                if (File.Exists(fi.FullName))
+                if (implementationClass != null)
                 {
-                    string key = Path.GetFileNameWithoutExtension(fi.FullName);
+                    endEncounter();
+                    implementationClass = null;
+                }
 
-                    if (!encounters.ContainsKey(key) || fi.LastWriteTimeUtc != classModified[key])
+
+
+                foreach (FileInfo fi in files)
+                {
+                    if (File.Exists(fi.FullName))
                     {
-                        try
-                        {
-                            Assembly tmpAssembly = loadAssemblyFile(fi.FullName);
+                        string key = Path.GetFileNameWithoutExtension(fi.FullName);
 
-                            if (tmpAssembly != null)
+                        if (!encounters.ContainsKey(key) || fi.LastWriteTimeUtc != classModified[key])
+                        {
+                            try
                             {
-                                encounters[key] = tmpAssembly;
-                                classModified[key] = fi.LastWriteTimeUtc;
+                                Assembly tmpAssembly = loadAssemblyFile(fi.FullName);
 
-                                debug("Compiled (" + fi.FullName + ".cs)", DBMErrorLevel.Notice);
+                                if (tmpAssembly != null)
+                                {
+                                    encounters[key] = tmpAssembly;
+                                    classModified[key] = fi.LastWriteTimeUtc;
+
+                                    debug("Compiled (" + fi.FullName + ".cs)", DBMErrorLevel.Notice);
+                                }
                             }
-                        }
-                        catch (Exception e)
-                        {
-                            debug("Compile error (" + fi.FullName + "): ", DBMErrorLevel.EncounterErrors, e);
+                            catch (Exception e)
+                            {
+                                debug("Compile error (" + fi.FullName + "): ", DBMErrorLevel.EncounterErrors, e);
+                            }
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                debug("Error compiling scripts", DBMErrorLevel.EngineErrors, ex);
             }
         }
 
@@ -1702,7 +1828,7 @@ namespace FFXIVDBM.Plugin
             }
             catch (Exception ex)
             {
-                debug("Error initializing script compiler", DBMErrorLevel.EncounterErrors, ex);
+                debug("Error initializing script compiler", DBMErrorLevel.EngineErrors, ex);
             }
 
         }
@@ -1771,15 +1897,22 @@ namespace FFXIVDBM.Plugin
 
         private static IEncounter findEntryPoint(Assembly assembly)
         {
-            foreach (Type type in assembly.GetTypes())
+            try
             {
-                if (!type.IsClass || type.IsNotPublic) continue;
-                Type[] interfaces = type.GetInterfaces();
-                if (((IList<Type>)interfaces).Contains(typeof(IEncounter)))
+                foreach (Type type in assembly.GetTypes())
                 {
-                    IEncounter iEncounter = (IEncounter)Activator.CreateInstance(type);
-                    return iEncounter;
+                    if (!type.IsClass || type.IsNotPublic) continue;
+                    Type[] interfaces = type.GetInterfaces();
+                    if (((IList<Type>)interfaces).Contains(typeof(IEncounter)))
+                    {
+                        IEncounter iEncounter = (IEncounter)Activator.CreateInstance(type);
+                        return iEncounter;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                debug("Error locating entry point in encounter script", DBMErrorLevel.EngineErrors, ex);
             }
 
             return null;
@@ -1789,16 +1922,24 @@ namespace FFXIVDBM.Plugin
 
         private static Assembly OnCurrentDomainAssemblyResolve(object sender, ResolveEventArgs args)
         {
-            // this is absurdly expensive...don't do this more than once, or load the assembly file in a more efficient way
-            // also, if the code you're using to compile the CodeDom assembly doesn't/hasn't used the referenced assembly yet, this won't work
-            // and you should use Assembly.Load(...)
-            foreach (Assembly @assembly in AppDomain.CurrentDomain.GetAssemblies())
+            try
             {
-                if (@assembly.FullName.Equals(args.Name, StringComparison.OrdinalIgnoreCase))
+                // this is absurdly expensive...don't do this more than once, or load the assembly file in a more efficient way
+                // also, if the code you're using to compile the CodeDom assembly doesn't/hasn't used the referenced assembly yet, this won't work
+                // and you should use Assembly.Load(...)
+                foreach (Assembly @assembly in AppDomain.CurrentDomain.GetAssemblies())
                 {
-                    return @assembly;
+                    if (@assembly.FullName.Equals(args.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return @assembly;
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                debug("Error OnCurrentDomainAssemblyResolve", DBMErrorLevel.EngineErrors, ex);
+            }
+
             return null;
         }
         #endregion
