@@ -48,7 +48,7 @@ namespace KaliyaNS
                 setPhase(7);
             };
 
-
+            
 
 
             RotationAbility NextPhase = new RotationAbility(); // Nerve Gas
@@ -278,7 +278,7 @@ namespace KaliyaNS
 
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(0), NerveGas); // Nerve Gas           19:2:52:543 @ 54.8601598256518%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(16.373936), Resonance);      // 19:3:8:917 @ 51.5358715810679%
-            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(10.9356255), SeedoftheRivers);      // 19:3:19:853 @ 49.0501687350157%
+            phases[phaseNum].AddRotation(TimeSpan.FromSeconds(10.9356255), Missiles);      // 19:3:19:853 @ 49.0501687350157%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(5.221299), Resonance);      // 19:3:25:74 @ 48.1602987496837%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(2.0741187), SecondaryHead);      // 19:3:27:148 @ 47.8853590745119%
             phases[phaseNum].AddRotation(TimeSpan.FromSeconds(5.195297), IntheHeadlights);      // 19:3:32:343 @ 47.3280148599272%

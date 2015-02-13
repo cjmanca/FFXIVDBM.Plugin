@@ -1,7 +1,7 @@
 {
     "PluginInfo": {
         "Name": "FFXIVDBM.Plugin",
-        "Version": "1.0.5520.2893",
+        "Version": "1.0.5522.8638",
         "FriendlyName": "Deadly Boss Mods",
         "Description": "Gives audible warnings for many encounters",
         "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/",
@@ -9,7 +9,7 @@
             {
                 "Name": "FFXIVDBM.Plugin.dll",
                 "Location": "",
-                "Checksum": "0f9a7a46d9c3b87bda351b8ff80327ae"
+                "Checksum": "eb0c02433fc175369d8b810223c0faf9"
             },
             {
                 "Name": "Logo.png",
@@ -54,7 +54,7 @@
             {
                 "Name": "Kaliya.cs",
                 "Location": "zones/English/194",
-                "Checksum": "73f2ef7617731b5392e9ac468142a4b7"
+                "Checksum": "b3b9bf408fd2f52864fd001cc1466553"
             },
             {
                 "Name": "The Navel (Hard).txt",
