@@ -23,6 +23,17 @@ namespace KaliyaNS
 
             int phaseNum = 1; // for convenience
 
+
+            TriggeredAbility EnrageTrigger = new TriggeredAbility();
+            EnrageTrigger.warningMessage = "Enrage soon";
+            EnrageTrigger.timerDuration = TimeSpan.FromMinutes(11);
+            EnrageTrigger.warningTime = TimeSpan.FromSeconds(30);
+
+            timedAbilities.Add(EnrageTrigger);
+
+            EnrageTrigger.start();
+
+
             TriggeredAbility ForkedLightning = new TriggeredAbility(); // Forked Lightning
             timedAbilities.Add(ForkedLightning);
             ForkedLightning.match = new Regex(@"(?<member>[^ ]+?) [^ ]+ suffers the effect of Forked Lightning\.");
@@ -169,16 +180,17 @@ namespace KaliyaNS
             RotationAbility NanosporeJet = new RotationAbility(); // Nanospore Jet
             NanosporeJet.announceWarning = true;
             NanosporeJet.match = new Regex(@"\ readies\ Nanospore\ Jet\.");
-            NanosporeJet.warningMessage = @"Nanospore Jet";
+            NanosporeJet.warningMessage = @"Tether";
             NanosporeJet.uniqueInPhase = true;
+            NanosporeJet.warningTime = TimeSpan.FromSeconds(2);
 
             RotationAbility AetherochemicalNanosporesA = new RotationAbility(); // Aetherochemical Nanospores α
-            AetherochemicalNanosporesA.announceWarning = true;
+            AetherochemicalNanosporesA.announceWarning = false;
             AetherochemicalNanosporesA.match = new Regex(@"\ suffers\ the\ effect\ of\ Aetherochemical\ Nanospores\ α\.");
             AetherochemicalNanosporesA.warningMessage = @"Tether";
 
             RotationAbility AetherochemicalNanosporesB = new RotationAbility(); // Aetherochemical Nanospores β
-            AetherochemicalNanosporesB.announceWarning = true;
+            AetherochemicalNanosporesB.announceWarning = false;
             AetherochemicalNanosporesB.match = new Regex(@"\ suffers\ the\ effect\ of\ Aetherochemical\ Nanospores\ β\.");
             AetherochemicalNanosporesB.warningMessage = @"Aetherochemical Nanospores β";
 

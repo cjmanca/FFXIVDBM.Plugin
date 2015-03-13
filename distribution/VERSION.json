@@ -1,7 +1,7 @@
 {
     "PluginInfo": {
         "Name": "FFXIVDBM.Plugin",
-        "Version": "1.0.5522.8638",
+        "Version": "1.0.5550.28722",
         "FriendlyName": "Deadly Boss Mods",
         "Description": "Gives audible warnings for many encounters",
         "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/",
@@ -9,7 +9,7 @@
             {
                 "Name": "FFXIVDBM.Plugin.dll",
                 "Location": "",
-                "Checksum": "eb0c02433fc175369d8b810223c0faf9"
+                "Checksum": "eb05dedf1ec4eb157bfb240a04479e32"
             },
             {
                 "Name": "Logo.png",
@@ -24,7 +24,7 @@
             {
                 "Name": "readme.txt",
                 "Location": "",
-                "Checksum": "0046f65f8121e77a08925e5003cc60e5"
+                "Checksum": "e05c748f764b53e4d94ab322e30f7fc8"
             },
             {
                 "Name": "EncounterScripts.csproj",
@@ -54,7 +54,17 @@
             {
                 "Name": "Kaliya.cs",
                 "Location": "zones/English/194",
-                "Checksum": "b3b9bf408fd2f52864fd001cc1466553"
+                "Checksum": "9fdb749bf62197b6fd735e6b26b5b1ea"
+            },
+            {
+                "Name": "Final Coil of Bahamut - Turn 3.txt",
+                "Location": "zones/English/195",
+                "Checksum": "7975ea573895fd496bc97399cfbba0a4"
+            },
+            {
+                "Name": "Phoenix.cs",
+                "Location": "zones/English/195",
+                "Checksum": "99b1f66cf71b4f4414aab12c77429029"
             },
             {
                 "Name": "The Navel (Hard).txt",

@@ -1283,22 +1283,22 @@ namespace FFXIVDBM.Plugin
 
                     if (youGain.regex != null && youGain.regex.IsMatch(chatLogEntry))
                     {
-                        chatLogEntry = youGain.regex.Replace(chatLogEntry, playerEntity.Name + youGain.replacement);
+                        chatLogEntry = youGain.regex.Replace(chatLogEntry, CurrentUser.Name + youGain.replacement);
                         dispatchChatLogEntry(chatLogEntry);
                     }
                     else if (youLose.regex != null && youLose.regex.IsMatch(chatLogEntry))
                     {
-                        chatLogEntry = youLose.regex.Replace(chatLogEntry, playerEntity.Name + youLose.replacement);
+                        chatLogEntry = youLose.regex.Replace(chatLogEntry, CurrentUser.Name + youLose.replacement);
                         dispatchChatLogEntry(chatLogEntry);
                     }
                     else if (youSuffer.regex != null && youSuffer.regex.IsMatch(chatLogEntry))
                     {
-                        chatLogEntry = youSuffer.regex.Replace(chatLogEntry, playerEntity.Name + youSuffer.replacement);
+                        chatLogEntry = youSuffer.regex.Replace(chatLogEntry, CurrentUser.Name + youSuffer.replacement);
                         dispatchChatLogEntry(chatLogEntry);
                     }
                     else if (youRecover.regex != null && youRecover.regex.IsMatch(chatLogEntry))
                     {
-                        chatLogEntry = youRecover.regex.Replace(chatLogEntry, playerEntity.Name + youRecover.replacement);
+                        chatLogEntry = youRecover.regex.Replace(chatLogEntry, CurrentUser.Name + youRecover.replacement);
                         dispatchChatLogEntry(chatLogEntry);
                     }
 
@@ -1374,7 +1374,7 @@ namespace FFXIVDBM.Plugin
             }
             catch (Exception ex2)
             {
-                debug("getEngineVsEncounter error: ", DBMErrorLevel.EngineErrors, ex2);
+                debug("getScriptsDirectory error: ", DBMErrorLevel.EngineErrors, ex2);
             }
 
             return "";
@@ -1457,7 +1457,7 @@ namespace FFXIVDBM.Plugin
             }
             catch (Exception ex2)
             {
-                debug("TTSThread Error 4", DBMErrorLevel.EngineErrors, ex2);
+                debug("Debug Error", DBMErrorLevel.EngineErrors, ex2);
             }
         }
 
