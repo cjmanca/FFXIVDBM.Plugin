@@ -34,6 +34,12 @@ namespace PhoenixNS
             EnrageTrigger.start();
 
 
+            TriggeredAbility FlamesofUnforgivenessTrigger = new TriggeredAbility(); // Flames of Unforgiveness
+            timedAbilities.Add(FlamesofUnforgivenessTrigger);
+            FlamesofUnforgivenessTrigger.announceWarning = true; 
+            FlamesofUnforgivenessTrigger.match = new Regex(@"\ readies\ Flames\ of\ Unforgiveness\.");
+            FlamesofUnforgivenessTrigger.matchMessage = @"Flames of Unforgiveness";
+
 
             TriggeredAbility BrandofPurgatoryTrigger = new TriggeredAbility();
             timedAbilities.Add(BrandofPurgatoryTrigger);
@@ -92,7 +98,7 @@ namespace PhoenixNS
             Whitefire.warningMessage = @"Whitefire"; 
             
             RotationAbility FlamesofUnforgiveness = new RotationAbility(); // Flames of Unforgiveness
-            FlamesofUnforgiveness.announceWarning = true;
+            FlamesofUnforgiveness.announceWarning = false;
             FlamesofUnforgiveness.match = new Regex(@"\ readies\ Flames\ of\ Unforgiveness\.");
             FlamesofUnforgiveness.warningMessage = @"Flames of Unforgiveness";
             FlamesofUnforgiveness.warningTime = TimeSpan.FromSeconds(2);

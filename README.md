@@ -16,6 +16,7 @@ Currently, the following encounters are scripted and working 99.9%:
 * T10
 * T11
 * T12
+* T13
 
 If you have any programming knowledge at all (even basic), I'd encourage you to look at the existing scripts, and use it as a basis for creating new encounter scripts for other encounters. You can submit new encounter scripts on github, here:
 

@@ -450,7 +450,7 @@ namespace FFXIVDBM.Plugin
                         if (tmp.Any())
                         {
                             ActorEntity currentEntity = tmp.First();
-                            if (currentEntity != null && currentEntity.IsValid && currentEntity.HPCurrent > 0 && currentEntity.ClaimedByID != 0 && currentEntity.ClaimedByID < 0xE0000000)
+                            if (currentEntity != null && currentEntity.IsValid && currentEntity.HPCurrent > 0) // && currentEntity.ClaimedByID != 0 && currentEntity.ClaimedByID < 0xE0000000)
                             {
                                 if (!_agroList.Any() && implementationClass == null && learningHelperClass == null)
                                 {
@@ -864,6 +864,12 @@ namespace FFXIVDBM.Plugin
                     {
                         // cache the enmity list so we can compare next time to detect changes
                         _enmityCached = playerEntity.EnmityEntries.ToList();
+
+                        if (!encounterStarted)
+                        {
+                            _agroList.Clear();
+                            _enmityCached.Clear();
+                        }
                     }
                     catch (Exception e2)
                     {
@@ -871,12 +877,12 @@ namespace FFXIVDBM.Plugin
                     }
 
                 }
-                inUpdate = false;
             }
             catch (Exception ex2)
             {
                 debug("updateData error: ", DBMErrorLevel.EngineErrors, ex2);
             }
+            inUpdate = false;
         }
 
         static void tickTimerEvent(object sender, ElapsedEventArgs e)

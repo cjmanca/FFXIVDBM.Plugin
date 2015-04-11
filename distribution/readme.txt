@@ -10,6 +10,7 @@ Turn 9
 Turn 10
 Turn 11
 Turn 12
+Turn 13
 Titan Hard Mode
 
 The encounters are only working for the English client at the moment. I will need assistance from users of other language clients to get it working for them.

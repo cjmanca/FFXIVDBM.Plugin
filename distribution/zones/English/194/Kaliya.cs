@@ -181,13 +181,13 @@ namespace KaliyaNS
             NanosporeJet.announceWarning = true;
             NanosporeJet.match = new Regex(@"\ readies\ Nanospore\ Jet\.");
             NanosporeJet.warningMessage = @"Tether";
-            NanosporeJet.uniqueInPhase = true;
             NanosporeJet.warningTime = TimeSpan.FromSeconds(2);
 
             RotationAbility AetherochemicalNanosporesA = new RotationAbility(); // Aetherochemical Nanospores α
             AetherochemicalNanosporesA.announceWarning = false;
             AetherochemicalNanosporesA.match = new Regex(@"\ suffers\ the\ effect\ of\ Aetherochemical\ Nanospores\ α\.");
             AetherochemicalNanosporesA.warningMessage = @"Tether";
+            AetherochemicalNanosporesA.warningTime = TimeSpan.FromSeconds(1);
 
             RotationAbility AetherochemicalNanosporesB = new RotationAbility(); // Aetherochemical Nanospores β
             AetherochemicalNanosporesB.announceWarning = false;

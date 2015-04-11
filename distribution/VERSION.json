@@ -1,7 +1,7 @@
 {
     "PluginInfo": {
         "Name": "FFXIVDBM.Plugin",
-        "Version": "1.0.5550.28722",
+        "Version": "1.0.5578.35220",
         "FriendlyName": "Deadly Boss Mods",
         "Description": "Gives audible warnings for many encounters",
         "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/",
@@ -9,7 +9,7 @@
             {
                 "Name": "FFXIVDBM.Plugin.dll",
                 "Location": "",
-                "Checksum": "eb05dedf1ec4eb157bfb240a04479e32"
+                "Checksum": "d0bd869f6fbbfcfb98a69a124e69c66e"
             },
             {
                 "Name": "Logo.png",
@@ -24,7 +24,7 @@
             {
                 "Name": "readme.txt",
                 "Location": "",
-                "Checksum": "e05c748f764b53e4d94ab322e30f7fc8"
+                "Checksum": "af831b8cbb748146d4b3b73e8d442902"
             },
             {
                 "Name": "EncounterScripts.csproj",
@@ -54,7 +54,7 @@
             {
                 "Name": "Kaliya.cs",
                 "Location": "zones/English/194",
-                "Checksum": "9fdb749bf62197b6fd735e6b26b5b1ea"
+                "Checksum": "95b2639dcd4c8796f4bcdb7ba701bf24"
             },
             {
                 "Name": "Final Coil of Bahamut - Turn 3.txt",
@@ -64,7 +64,17 @@
             {
                 "Name": "Phoenix.cs",
                 "Location": "zones/English/195",
-                "Checksum": "99b1f66cf71b4f4414aab12c77429029"
+                "Checksum": "1e09e26164fc7812abae8e136e91557f"
+            },
+            {
+                "Name": "Bahamut Prime.cs",
+                "Location": "zones/English/196",
+                "Checksum": "351712e802d98ee2a5053bffdb231f7c"
+            },
+            {
+                "Name": "Final Coil of Bahamut - Turn 4.txt",
+                "Location": "zones/English/196",
+                "Checksum": "334ceaab4a6aaeba05c14cdbdcf1446f"
             },
             {
                 "Name": "The Navel (Hard).txt",
@@ -89,7 +99,7 @@
             {
                 "Name": "Melusine.cs",
                 "Location": "zones/English/356",
-                "Checksum": "4048e00ef76b2aa8815ffc4aac165ca2"
+                "Checksum": "b0a7ab17d999900eaabb2cd0ae7ef69e"
             },
             {
                 "Name": "Second Coil Of Bahamut - Turn 2.txt",

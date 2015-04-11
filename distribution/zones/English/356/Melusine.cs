@@ -16,6 +16,7 @@ namespace MelusineNS
         bool pausedDamage;
         DateTime lastRenaud;
         DateTime lastVoice;
+        DateTime lastAddedNewMob = DateTime.Now;
 
         public void onStartEncounter()
         {
@@ -27,6 +28,7 @@ namespace MelusineNS
             pausedDamage = false;
             lastRenaud = DateTime.MinValue;
             lastVoice = DateTime.MinValue;
+            lastAddedNewMob = DateTime.Now;
 
 
             TriggeredAbility PetrifactionTrigger = new TriggeredAbility();
@@ -111,7 +113,6 @@ namespace MelusineNS
 
 
         }
-        DateTime lastAddedNewMob = DateTime.Now;
 
         public void onMobAdded(ActorEntity mob)
         {
