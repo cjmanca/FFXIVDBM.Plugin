@@ -1,7 +1,7 @@
 {
     "PluginInfo": {
         "Name": "FFXIVDBM.Plugin",
-        "Version": "1.0.5652.40480",
+        "Version": "1.0.5658.28076",
         "FriendlyName": "Deadly Boss Mods",
         "Description": "Gives audible warnings for many encounters",
         "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/",
@@ -9,7 +9,7 @@
             {
                 "Name": "FFXIVDBM.Plugin.dll",
                 "Location": "",
-                "Checksum": "58c1d7c5765ea2993d4044ac174aa97b"
+                "Checksum": "23cc870f77df455353b29d3e1ae6a21b"
             },
             {
                 "Name": "Logo.png",
