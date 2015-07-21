@@ -47,7 +47,7 @@ namespace EncounterNS
         private string lastSQLError = "";
 
         string mdbConnectionStringBase = "Provider=Microsoft.Jet.OLEDB.4.0; Data Source=";
-        string mdbConnectionString = "";
+        string mdbConnectionStringAlternateBase = "Provider=Microsoft.ACE.OLEDB.12.0; Data Source=";
         OleDbConnection database;
 
 
@@ -107,8 +107,6 @@ namespace EncounterNS
             baseBossName = bossName;
             safeBossName = filenameStripperRegex.Replace(bossName, "");
             NSBossName = nameStripperRegex.Replace(bossName, "");
-
-            mdbConnectionString = mdbConnectionStringBase + getDatabasePath();
 
             
 
@@ -192,7 +190,7 @@ namespace EncounterNS
 
             if (lastSQLError != "")
             {
-                //MessageBox.Show(lastSQLError);
+                //debug("SQL error: " + lastSQLError, DBMErrorLevel.Notice);
             }
 
 
@@ -226,7 +224,7 @@ namespace EncounterNS
 
             if (lastSQLError != "")
             {
-                MessageBox.Show(lastSQLError);
+                debug("SQL error: " + lastSQLError, DBMErrorLevel.Notice);
             }
 
 
@@ -784,8 +782,10 @@ namespace EncounterNS
                                 regexLogLine = Regex.Escape(" suffers the effect of " + ability + ".");
 
                                 bool foundPerson = false;
-                                foreach (ActorEntity pe in EncounterController.pcEntities)
+                                foreach (var KVP in EncounterController.pcEntities)
                                 {
+                                    ActorEntity pe = KVP.Value;
+
                                     if (pe.Name == otherTarget)
                                     {
                                         foundPerson = true;
@@ -820,8 +820,9 @@ namespace EncounterNS
                 return;
             }
             // ignore players
-            foreach (ActorEntity pe in EncounterController.pcEntities)
+            foreach (var KVP in EncounterController.pcEntities)
             {
+                ActorEntity pe = KVP.Value;
                 if (pe.Name == name)
                 {
                     return;
@@ -985,7 +986,27 @@ namespace EncounterNS
                     // Use a late bound COM object to create a new catalog. This is so we avoid an interop assembly. 
                     Type catType = Type.GetTypeFromProgID("ADOX.Catalog");
                     object o = Activator.CreateInstance(catType);
-                    catType.InvokeMember("Create", System.Reflection.BindingFlags.InvokeMethod, null, o, new object[] { mdbConnectionString });
+
+                    
+                    try
+                    {
+                        catType.InvokeMember("Create", System.Reflection.BindingFlags.InvokeMethod, null, o, new object[] { mdbConnectionStringBase + getDatabasePath() });
+
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            catType.InvokeMember("Create", System.Reflection.BindingFlags.InvokeMethod, null, o, new object[] { mdbConnectionStringAlternateBase + getDatabasePath() });
+                        }
+                        catch (Exception ex2)
+                        {
+                            debug("Create Database error 1: " + ex2.Message, DBMErrorLevel.Notice);
+
+                            Marshal.ReleaseComObject(o);
+                            return;
+                        }
+                    }
 
                     try
                     {
@@ -993,17 +1014,35 @@ namespace EncounterNS
                     }
                     catch { }
                 }
-
-                database = new OleDbConnection(mdbConnectionString);
-                database.Open();
-
-                analyzeAndUpdateDatabase();
-
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Database error: " + ex.Message);
+                debug("Create Database error 2: " + ex.Message, DBMErrorLevel.Notice);
+                return;
             }
+
+            try
+            {
+                database = new OleDbConnection(mdbConnectionStringBase + getDatabasePath());
+                database.Open();
+
+            }
+            catch
+            {
+                try
+                {
+                    database = new OleDbConnection(mdbConnectionStringAlternateBase + getDatabasePath());
+                    database.Open();
+                }
+                catch (Exception ex)
+                {
+                    debug("Database error: " + ex.Message, DBMErrorLevel.Notice);
+                    return;
+                }
+            }
+
+            analyzeAndUpdateDatabase();
+
         }
 
         private void createTableIfNotExists(string tableName)

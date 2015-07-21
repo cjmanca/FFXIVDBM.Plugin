@@ -1,7 +1,7 @@
 {
     "PluginInfo": {
         "Name": "FFXIVDBM.Plugin",
-        "Version": "1.0.5592.24623",
+        "Version": "1.0.5679.38669",
         "FriendlyName": "Deadly Boss Mods",
         "Description": "Gives audible warnings for many encounters",
         "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/",
@@ -9,7 +9,7 @@
             {
                 "Name": "FFXIVDBM.Plugin.dll",
                 "Location": "",
-                "Checksum": "a43d3932fec1dfe67993a12463dc16cc"
+                "Checksum": "9a4698455761bc612ca63c0da7c17075"
             },
             {
                 "Name": "Logo.png",
@@ -24,7 +24,7 @@
             {
                 "Name": "readme.txt",
                 "Location": "",
-                "Checksum": "af831b8cbb748146d4b3b73e8d442902"
+                "Checksum": "f90e68a27c838c3a6380a8830c6fbe49"
             },
             {
                 "Name": "EncounterScripts.csproj",
@@ -125,6 +125,16 @@
                 "Name": "Second Coil Of Bahamut - Turn 4.txt",
                 "Location": "zones/English/358",
                 "Checksum": "6a435adee364f0d873190253977440bc"
+            },
+            {
+                "Name": "Ravana (Extreme).txt",
+                "Location": "zones/English/446",
+                "Checksum": "76b0686d1b4b2fcde96d6ecc7ee4939a"
+            },
+            {
+                "Name": "Ravana.cs",
+                "Location": "zones/English/446",
+                "Checksum": "d472f9e9f9c98eaef77cbe3d37eeb34e"
             }
         ]
     }

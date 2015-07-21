@@ -1,6 +1,7 @@
 ﻿using FFXIVAPP.Common.Core.Memory;
 using FFXIVAPP.Common.Helpers;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,14 +22,14 @@ namespace FFXIVDBM.Plugin
         }
 
 
-        public static List<ActorEntity> mobList
+        public static ConcurrentDictionary<uint, ActorEntity> mobList
         {
             get
             {
                 return EncounterController.mobList;
             }
         }
-        public static List<ActorEntity> npcList
+        public static ConcurrentDictionary<uint, ActorEntity> npcList
         {
             get
             {
@@ -36,7 +37,7 @@ namespace FFXIVDBM.Plugin
             }
         }
 
-        public static List<ActorEntity> pcEntities
+        public static ConcurrentDictionary<uint, ActorEntity> pcEntities
         {
             get
             {
@@ -44,7 +45,7 @@ namespace FFXIVDBM.Plugin
             }
         }
 
-        public static List<PartyEntity> partyList
+        public static ConcurrentDictionary<uint, PartyEntity> partyList
         {
             get
             {
@@ -244,15 +245,19 @@ namespace FFXIVDBM.Plugin
         {
             bool delayed = abil.timerStartedAt > DateTime.Now - abil.collectMultipleLinesFor;
 
-            if (abil.announceWarning && abil.warningDelayStarted && !delayed)
+            if (abil.warningDelayStarted && !delayed)
             {
                 abil.warningDelayStarted = false;
-                string message = parseMessage(abil, abil.matchMessage);
 
-                tts(message);
+                if (abil.announceWarning)
+                {
+                    string message = parseMessage(abil, abil.matchMessage);
+
+                    tts(message);
+                }
             }
         }
-            
+        
         private void testTimedAbilityTimer(TriggeredAbility abil)
         {
             if (abil.timerStarted)
@@ -310,12 +315,16 @@ namespace FFXIVDBM.Plugin
         {
             Regex rgx;
 
+            Dictionary<string, string> lastMatch = new Dictionary<string, string>();
+
             if (abil.lastMatch.Count > 0)
             {
                 foreach (KeyValuePair<int, Dictionary<string, string>> collections in abil.lastMatch)
                 {
                     foreach (KeyValuePair<string, string> group in collections.Value)
                     {
+                        lastMatch[group.Key] = group.Value;
+
                         rgx = new Regex("\\$\\{" + Regex.Escape(group.Key) + "\\." + Regex.Escape(collections.Key.ToString()) + "\\}");
 
                         if (rgx.IsMatch(message))
@@ -333,6 +342,16 @@ namespace FFXIVDBM.Plugin
                         message = rgx.Replace(message, group.Value);
 
                         rgx = new Regex("\\$\\{" + Regex.Escape(group.Key) + "\\}");
+                        message = rgx.Replace(message, group.Value);
+                    }
+                }
+
+                foreach (KeyValuePair<string, string> group in lastMatch)
+                {
+                    rgx = new Regex("\\$\\{" + Regex.Escape(group.Key) + "\\.last\\}");
+
+                    if (rgx.IsMatch(message))
+                    {
                         message = rgx.Replace(message, group.Value);
                     }
                 }

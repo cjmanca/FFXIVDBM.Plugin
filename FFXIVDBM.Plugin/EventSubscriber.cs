@@ -143,8 +143,6 @@ namespace FFXIVDBM.Plugin
             }
             
             EncounterController.pcEntities = pcEntities;
-            EncounterController.CurrentUser = pcEntities.First();
-            EncounterController.zone = ZoneHelper.GetMapInfo(EncounterController.CurrentUser.MapIndex);
         }
 
         private static void OnNewPlayerEntity(object sender, PlayerEntityEvent playerEntityEvent)

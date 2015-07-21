@@ -23,6 +23,7 @@ using System.Diagnostics;
 using FFXIVDBM.Plugin.Views;
 using FFXIVDBM.Plugin.Properties;
 using System.Runtime.InteropServices;
+using System.Collections.Concurrent;
 
 namespace FFXIVDBM.Plugin
 {
@@ -60,12 +61,12 @@ namespace FFXIVDBM.Plugin
         }
 
 
-        private static List<ActorEntity> _mobList = new List<ActorEntity>();
-        public static List<ActorEntity> mobList
+        private static ConcurrentDictionary<uint, ActorEntity> _mobList = new ConcurrentDictionary<uint, ActorEntity>();
+        public static ConcurrentDictionary<uint, ActorEntity> mobList
         {
             get
             {
-                return _mobList;
+                return _mobCached;
             }
             set
             {
@@ -74,8 +75,8 @@ namespace FFXIVDBM.Plugin
         }
 
 
-        private static List<ActorEntity> _npcList = new List<ActorEntity>();
-        public static List<ActorEntity> npcList
+        private static ConcurrentDictionary<uint, ActorEntity> _npcList = new ConcurrentDictionary<uint, ActorEntity>();
+        public static ConcurrentDictionary<uint, ActorEntity> npcList
         {
             get
             {
@@ -88,8 +89,8 @@ namespace FFXIVDBM.Plugin
         }
 
 
-        private static List<ActorEntity> _pcEntities = new List<ActorEntity>();
-        public static List<ActorEntity> pcEntities
+        private static ConcurrentDictionary<uint, ActorEntity> _pcEntities = new ConcurrentDictionary<uint, ActorEntity>();
+        public static ConcurrentDictionary<uint, ActorEntity> pcEntities
         {
             get
             {
@@ -101,8 +102,8 @@ namespace FFXIVDBM.Plugin
             }
         }
 
-        private static List<PartyEntity> _partyList = new List<PartyEntity>();
-        public static List<PartyEntity> partyList
+        private static ConcurrentDictionary<uint, PartyEntity> _partyList = new ConcurrentDictionary<uint, PartyEntity>();
+        public static ConcurrentDictionary<uint, PartyEntity> partyList
         {
             get
             {
@@ -161,10 +162,15 @@ namespace FFXIVDBM.Plugin
             }
             set
             {
+                if (value == null || value.Index == 0)
+                {
+                    return;
+                }
+
                 bool newZone = false;
                 try
                 {
-                    if (_zone != null && value != null &&_zone.Index != value.Index)
+                    if (_zone == null || (value != null &&_zone.Index != value.Index))
                     {
                         newZone = true;
                     }
@@ -179,7 +185,7 @@ namespace FFXIVDBM.Plugin
 
                 try
                 {
-                    if (newZone)
+                    if (newZone && _zone != null)
                     {
                         handleRemoveEntryName = "Zone change";
                         endEncounter();
@@ -203,7 +209,7 @@ namespace FFXIVDBM.Plugin
         private static IEncounter implementationClass = null;
         private static IEncounter learningHelperClass = null;
 
-        private static List<ActorEntity> _mobCached = null;
+        private static ConcurrentDictionary<uint, ActorEntity> _mobCached = null;
         private static List<EnmityEntry> _enmityCached = null;
         private static System.Timers.Timer tickTimer = null;
         private static System.Timers.Timer enmityTimer = null;
@@ -255,6 +261,7 @@ namespace FFXIVDBM.Plugin
         private static Regex sealedOff = null;
 
         private static Regex testString = null;
+        private static Regex repeatString = null;
         private static Regex endString = null;
 
         public static List<string> ignoreMobs;
@@ -283,7 +290,7 @@ namespace FFXIVDBM.Plugin
 
                 _enmityCached = new List<EnmityEntry>();
                 _agroList = new List<ActorEntity>();
-                _mobCached = new List<ActorEntity>();
+                _mobCached = new ConcurrentDictionary<uint, ActorEntity>();
 
 
 
@@ -343,13 +350,14 @@ namespace FFXIVDBM.Plugin
 
         static void trySetup()
         {
-            if (Constants.GameLanguage == null || CurrentUser == null)
+            if (Constants.GameLanguage == null || CurrentUser == null || _targetEntity == null || CurrentUser.HPMax == 0 || zone.Index == 0)
             {
                 return;
             }
 
             try
             {
+
                 if (youGainDict.ContainsKey(Constants.GameLanguage))
                 {
                     youGain = youGainDict[Constants.GameLanguage];
@@ -389,6 +397,7 @@ namespace FFXIVDBM.Plugin
                 }
 
                 testString = new Regex(@"\!testing");
+                repeatString = new Regex(@"\@(.*)");
                 endString = new Regex(@"\!end");
 
                 try
@@ -408,15 +417,6 @@ namespace FFXIVDBM.Plugin
                     EncounterController.errorLevel = DBMErrorLevel.EncounterInfo;
                 }
 
-                if (CurrentUser.HPMax == 0)
-                {
-                    return;
-                }
-                if (_targetEntity == null)
-                {
-                    return;
-                }
-
                 compileScripts();
 
                 debug("DBM Ready, speech volume: " + speechVolume);
@@ -429,7 +429,7 @@ namespace FFXIVDBM.Plugin
             setupDone = true;
         }
 
-
+        
         static void checkForNewAgro()
         {
             List<uint> diff = null;
@@ -442,15 +442,22 @@ namespace FFXIVDBM.Plugin
                 if (diff.Any())
                 {
                     // loop through the new enmity entries
-                    diff.ForEach(delegate(uint ID)
-                    {
-                        // get the actual ActorEntity object for this enmity entry
-                        IEnumerable<ActorEntity> tmp = mobList.Where(x => x.ID == ID);
 
-                        if (tmp.Any())
+                    foreach (uint ID in diff)
+                    {
+                        ActorEntity currentEntity = null;
+                        if (_mobCached.ContainsKey(ID))
                         {
-                            ActorEntity currentEntity = tmp.First();
-                            if (currentEntity != null && currentEntity.IsValid && currentEntity.HPCurrent > 0) // && currentEntity.ClaimedByID != 0 && currentEntity.ClaimedByID < 0xE0000000)
+                            currentEntity = _mobCached[ID];
+                        }
+                        else if (_mobList.ContainsKey(ID))
+                        {
+                            currentEntity = _mobList[ID];
+                        }
+
+                        if (currentEntity != null)
+                        {
+                            if (currentEntity.IsValid && currentEntity.HPCurrent > 0) // && currentEntity.ClaimedByID != 0 && currentEntity.ClaimedByID < 0xE0000000)
                             {
                                 if (!_agroList.Any() && implementationClass == null && learningHelperClass == null)
                                 {
@@ -461,12 +468,13 @@ namespace FFXIVDBM.Plugin
                                 // make sure it's our own copy so it won't mysteriously disappear or change without our knowledge
                                 currentEntity = cloneActorEntity(currentEntity);
 
-                                if (_agroList.Count == 0)
+                                if (_agroList.Any())
                                 {
                                     firstAgro = DateTime.Now;
                                 }
 
                                 _agroList.Add(currentEntity);
+                                endEncounterAt = DateTime.MaxValue;
 
 
                                 if (implementationClass != null)
@@ -572,8 +580,16 @@ namespace FFXIVDBM.Plugin
                                 }
 
                             }
+                            else
+                            {
+                                debug("New agro invalid: IsValid: " + currentEntity.IsValid + ", HPCurrent: " + currentEntity.HPCurrent + ", ClaimedByID: " + currentEntity.ClaimedByID, DBMErrorLevel.Notice);
+                            }
                         }
-                    });
+                        else
+                        {
+                            debug("New agro not found (ID: " + ID + ")", DBMErrorLevel.Notice);
+                        }
+                    }
                 }
             }
             catch (Exception e2)
@@ -613,15 +629,69 @@ namespace FFXIVDBM.Plugin
             }
         }
 
+        static void handleNewMob(ActorEntity currentEntity)
+        {
+            if (currentEntity != null && currentEntity.IsValid && currentEntity.HPCurrent > 0 && (currentEntity.OwnerID == 0 || currentEntity.OwnerID >= 0xE0000000))
+            {
+                // make sure it's our own copy so it won't mysteriously disappear or change without our knowledge
+                currentEntity = cloneActorEntity(currentEntity);
+
+                _mobCached[currentEntity.ID] = currentEntity;
+
+
+                if (learningHelperClass != null)
+                {
+                    // send the new mobs to the learning helper
+                    try
+                    {
+                        learningHelperClass.onMobAdded(currentEntity);
+                    }
+                    catch (Exception e2)
+                    {
+                        debug("learningHelper onMobAdded", getEngineVsEncounter(learningHelperClass), e2);
+                    }
+                }
+
+                if (implementationClass != null)
+                {
+                    // send the new mobs to the encounter script
+                    try
+                    {
+                        inController = false;
+                        debug("Added Mob: " + currentEntity.Name + " ID: " + currentEntity.ID + " NPCID1: " + currentEntity.NPCID1 + " NPCID2: " + currentEntity.NPCID2, DBMErrorLevel.Trace);
+                        implementationClass.onMobAdded(currentEntity);
+                        inController = true;
+                    }
+                    catch (Exception e2)
+                    {
+                        debug("onMobAdded", getEngineVsEncounter(implementationClass), e2);
+                        inController = true;
+                    }
+
+                }
+            }
+        }
+
+        // Stub for the new event system
+        static void newMobsEvent(List<uint> mobs)
+        {
+            foreach (uint ID in mobs)
+            {
+                if (_mobList.ContainsKey(ID))
+                {
+                    handleNewMob(_mobList[ID]);
+                }
+            }
+        }
+
+
         static void checkForNewMobs()
         {
             try
             {
 
                 // Check for new entries in the mob list
-                
-                //var anonDiff = mobList.Select(i => new { NPCID1 = i.NPCID1, NPCID2 = i.NPCID2 }).Except(_mobCached.Select(y => new { NPCID1 = y.NPCID1, NPCID2 = y.NPCID2 })).ToList();
-                List<uint> anonDiff = mobList.Select(i => i.ID).Except(_mobCached.Select(y => y.ID)).ToList();
+                List<uint> anonDiff = _mobList.Select(i => i.Key).Except(_mobCached.Select(y => y.Key)).ToList();
 
 
                 if (anonDiff.Any())
@@ -629,51 +699,9 @@ namespace FFXIVDBM.Plugin
                     // loop through the new mob entries
                     foreach (var ID in anonDiff)
                     {
-                        // get the actual ActorEntity object for this mob entry
-                        //IEnumerable<ActorEntity> currentEntityIEnum = mobList.Where(x => x.NPCID1 == ID.NPCID1 && x.NPCID2 == ID.NPCID2);
-                        IEnumerable<ActorEntity> currentEntityIEnum = mobList.Where(x => x.ID == ID);
-
-                        if (currentEntityIEnum.Any())
+                        if (_mobList.ContainsKey(ID))
                         {
-                            ActorEntity currentEntity = currentEntityIEnum.First();
-                            if (currentEntity != null && currentEntity.IsValid && currentEntity.HPCurrent > 0 && (currentEntity.OwnerID == 0 || currentEntity.OwnerID >= 0xE0000000))
-                            {
-                                // make sure it's our own copy so it won't mysteriously disappear or change without our knowledge
-                                currentEntity = cloneActorEntity(currentEntity);
-
-                                _mobCached.Add(currentEntity);
-
-                                if (learningHelperClass != null)
-                                {
-                                    // send the new mobs to the learning helper
-                                    try
-                                    {
-                                        learningHelperClass.onMobAdded(currentEntity);
-                                    }
-                                    catch (Exception e2)
-                                    {
-                                        debug("learningHelper onMobAdded", getEngineVsEncounter(learningHelperClass), e2);
-                                    }
-                                }
-
-                                if (implementationClass != null)
-                                {
-                                    // send the new mobs to the encounter script
-                                    try
-                                    {
-                                        inController = false;
-                                        debug("Added Mob: " + currentEntity.Name + " ID: " + currentEntity.ID + " NPCID1: " + currentEntity.NPCID1 + " NPCID2: " + currentEntity.NPCID2, DBMErrorLevel.Trace);
-                                        implementationClass.onMobAdded(currentEntity);
-                                        inController = true;
-                                    }
-                                    catch (Exception e2)
-                                    {
-                                        debug("onMobAdded", getEngineVsEncounter(implementationClass), e2);
-                                        inController = true;
-                                    }
-
-                                }
-                            }
+                            handleNewMob(_mobList[ID]);
                         }
                     }
                 }
@@ -689,22 +717,23 @@ namespace FFXIVDBM.Plugin
             try
             {
                 // Duplicate the list first before looping through it, or we'll get exceptions when we try to remove entries from the original list
-                List<ActorEntity> tmpList = _mobCached.ToList();
-
-                tmpList.ForEach(delegate(ActorEntity cachedEntity)
+                Dictionary<uint, ActorEntity> tmpList = _mobCached.ToDictionary(x => x.Key, x => x.Value);
+                
+                foreach (var cachedKVP in tmpList)
                 {
-                    handleRemoveEntryName = cachedEntity.Name;
-                    //IEnumerable<ActorEntity> enumTmpEnt = _mobList.Where(x => x.NPCID1 == cachedEntity.NPCID1 && x.NPCID2 == cachedEntity.NPCID2);
-                    IEnumerable<ActorEntity> enumTmpEnt = mobList.Where(x => x.ID == cachedEntity.ID);
+                    ActorEntity cachedEntity = cachedKVP.Value;
 
-                    if (!enumTmpEnt.Any())
+                    handleRemoveEntryName = cachedEntity.Name;
+
+                    if (!_mobList.ContainsKey(cachedEntity.ID))
                     {
                         handleRemoveEntry = 1;
                         handleRemove(cachedEntity, null);
                     }
                     else
                     {
-                        ActorEntity currentEntity = enumTmpEnt.First();
+                        ActorEntity currentEntity = _mobList[cachedEntity.ID];
+
                         if (currentEntity == null)
                         {
                             handleRemoveEntry = 2;
@@ -728,14 +757,14 @@ namespace FFXIVDBM.Plugin
                                 else
                                 {
                                     // update our copy with the new info
-                                    copyActorEntity(currentEntity, ref cachedEntity);
+                                    copyActorEntity(currentEntity, cachedEntity);
                                 }
                             }
                         }
                     }
                     handleRemoveEntry = 0;
                     handleRemoveEntryName = "";
-                });
+                }
 
 
 
@@ -751,78 +780,66 @@ namespace FFXIVDBM.Plugin
         {
             try
             {
-                List<uint> newEnmityList = playerEntity.EnmityEntries.Select(x => x.ID).ToList();
+                Dictionary<uint, uint> newEnmityList = playerEntity.EnmityEntries.ToDictionary(x => x.ID, x => x.ID);
 
                 // Duplicate the list first before looping through it, or we'll get exceptions when we try to remove entries from the original list
                 List<ActorEntity> tmpList = _agroList.ToList();
-
-                tmpList.ForEach(delegate(ActorEntity cachedEntity)
+                
+                foreach (ActorEntity cachedEntity in tmpList)
                 {
+                    if (newEnmityList.ContainsKey(cachedEntity.ID))
+                    {
+                        continue;
+                    }
+
                     handleRemoveEntryName = cachedEntity.Name;
-                    //IEnumerable<ActorEntity> enumTmpEnt = _mobList.Where(x => x.NPCID1 == cachedEntity.NPCID1 && x.NPCID2 == cachedEntity.NPCID2);
-                    IEnumerable<ActorEntity> enumTmpEnt = _mobList.Where(x => x.ID == cachedEntity.ID);
-                    if (!enumTmpEnt.Any())
+
+                    if (!mobList.ContainsKey(cachedEntity.ID))
                     {
                         handleRemoveEntry = 1;
                         handleRemoveAgro(cachedEntity, null);
                     }
                     else
                     {
-                        ActorEntity currentEntity = enumTmpEnt.First();
+                        ActorEntity currentEntity = mobList[cachedEntity.ID];
                         if (currentEntity == null)
                         {
                             handleRemoveEntry = 2;
                             handleRemoveAgro(cachedEntity, currentEntity);
                         }
+                        else if (!currentEntity.IsValid)
+                        {
+                            handleRemoveEntry = 3;
+                            handleRemoveAgro(cachedEntity, currentEntity);
+                        }
+                        else if (currentEntity.ClaimedByID == 0 || currentEntity.ClaimedByID >= 0xE0000000)
+                        {
+                            handleRemoveEntry = 4;
+                            handleRemoveAgro(cachedEntity, currentEntity);
+                        }
+                        else if (currentEntity.HPCurrent <= 0)
+                        {
+                            handleRemoveEntry = 5;
+                            handleRemoveAgro(cachedEntity, currentEntity);
+                        }
+                        else if (!newEnmityList.ContainsKey(currentEntity.ID) && currentEntity.HPCurrent >= currentEntity.HPMax && CurrentUser.HPCurrent > 0)
+                        {
+                            // ClaimedByID seems unreliable sometimes, and IsClaimed never seems to work,
+                            // so instead, check to see if the mob is full health but NOT in the agroList anymore
+                            // Also make sure we're alive, since the agro list is temporarily empty when dead.
+                            handleRemoveEntry = 6;
+                            handleRemoveAgro(cachedEntity, currentEntity);
+                        }
                         else
                         {
-                            if (!currentEntity.IsValid)
-                            {
-                                handleRemoveEntry = 3;
-                                handleRemoveAgro(cachedEntity, currentEntity);
-                            }
-                            else
-                            {
-                                if (currentEntity.ClaimedByID == 0 || currentEntity.ClaimedByID >= 0xE0000000)
-                                //if ((!tmpActor.IsClaimed && tmpActor.ClaimedByID == 0))
-                                {
-                                    handleRemoveEntry = 4;
-                                    handleRemoveAgro(cachedEntity, currentEntity);
-                                }
-                                else
-                                {
-                                    // remove if dead
-                                    if (currentEntity.HPCurrent <= 0)
-                                    {
-                                        handleRemoveEntry = 5;
-                                        handleRemoveAgro(cachedEntity, currentEntity);
-                                    }
-                                    else
-                                    {
-                                        // ClaimedByID seems unreliable sometimes, and IsClaimed never seems to work,
-                                        // so instead, check to see if the mob is full health but NOT in the agroList anymore
-                                        // Also make sure we're alive, since the agro list is temporarily empty when dead.
-                                        if (!newEnmityList.Contains(currentEntity.ID) && currentEntity.HPCurrent >= currentEntity.HPMax && CurrentUser.HPCurrent > 0)
-                                        {
-                                            handleRemoveEntry = 6;
-                                            handleRemoveAgro(cachedEntity, currentEntity);
-                                        }
-                                        else
-                                        {
-                                            // update our copy with the new info
-                                            copyActorEntity(currentEntity, ref cachedEntity);
-                                        }
-                                    }
-                                }
-                            }
+                            // update our copy with the new info
+                            copyActorEntity(currentEntity, cachedEntity);
                         }
                     }
+
                     handleRemoveEntry = 0;
                     handleRemoveEntryName = "";
-                });
-
-
-
+                }
             }
             catch (Exception e2)
             {
@@ -831,10 +848,103 @@ namespace FFXIVDBM.Plugin
 
         }
 
+        static DateTime lastMapIndexChangePlusSafe = DateTime.MinValue;
+        static DateTime lastLevelChangePlusSafe = DateTime.MinValue;
+        static DateTime lastJobChangePlusSafe = DateTime.MinValue;
+
+        static uint lastMapIndex = 0;
+        static int lastLevel = 0;
+        static FFXIVAPP.Common.Core.Memory.Enums.Actor.Job lastJob = FFXIVAPP.Common.Core.Memory.Enums.Actor.Job.Unknown;
+
+        static bool checkCurrentUserIntegrety()
+        {
+
+            bool shouldUpdate = true;
+
+            if (!pcEntities.Any())
+            {
+                return false;
+            }
+
+            ActorEntity tmpUser = pcEntities.First().Value;
+
+            if (tmpUser == null)
+            {
+                debug("checkCurrentUserIntegrety: pcEntities.First().Value is null", DBMErrorLevel.EngineErrors);
+                return false;
+            }
+
+            tmpUser = tmpUser.CurrentUser;
+
+            if (tmpUser == null)
+            {
+                debug("checkCurrentUserIntegrety: pcEntities.First().Value.CurrentUser is null", DBMErrorLevel.EngineErrors);
+                return false;
+            }
+
+            if (ZoneHelper.GetMapInfo(tmpUser.MapIndex).Index == 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                if (_currentUser != null && tmpUser != null)
+                {
+                    if (tmpUser.Level != lastLevel && tmpUser.Level != _currentUser.Level)
+                    {
+                        lastLevel = tmpUser.Level;
+                        lastLevelChangePlusSafe = DateTime.Now + TimeSpan.FromSeconds(1);
+                        shouldUpdate = false;
+                    }
+                    if (tmpUser.Job != lastJob && tmpUser.Job != _currentUser.Job)
+                    {
+                        lastJob = tmpUser.Job;
+                        lastJobChangePlusSafe = DateTime.Now + TimeSpan.FromSeconds(1);
+                        shouldUpdate = false;
+                    }
+                    if (tmpUser.MapIndex != lastMapIndex && tmpUser.MapIndex != _currentUser.MapIndex)
+                    {
+                        lastMapIndex = tmpUser.MapIndex;
+                        lastMapIndexChangePlusSafe = DateTime.Now + TimeSpan.FromSeconds(1);
+                        shouldUpdate = false;
+                    }
+
+                    if (DateTime.Now > lastLevelChangePlusSafe && DateTime.Now > lastJobChangePlusSafe && DateTime.Now > lastMapIndexChangePlusSafe)
+                    {
+                        shouldUpdate = true;
+                    }
+                    else if (tmpUser.Job != _currentUser.Job || tmpUser.Level != _currentUser.Level || tmpUser.MapIndex != _currentUser.MapIndex)
+                    {
+                        shouldUpdate = false;
+                    }
+
+                }
+            }
+            catch (Exception e)
+            {
+                debug("checkCurrentUserIntegrety error:", DBMErrorLevel.EngineErrors, e);
+            }
+
+            if (shouldUpdate)
+            {
+                // clone it so comparisons work
+                CurrentUser = cloneActorEntity(tmpUser);
+                EncounterController.zone = ZoneHelper.GetMapInfo(tmpUser.MapIndex);
+            }
+
+            return shouldUpdate;
+        }
+
         static void updateData(object sender, ElapsedEventArgs e)
         {
             try
             {
+                if (!checkCurrentUserIntegrety())
+                {
+                    return;
+                }
+
                 List<uint> diff = new List<uint>();
 
                 lock (updateLock)
@@ -857,8 +967,8 @@ namespace FFXIVDBM.Plugin
 
                     checkForNewMobs();
                     checkForNewAgro();
-                    checkForRemovedMobs();
                     checkForRemovedAgro();
+                    checkForRemovedMobs();
 
                     try
                     {
@@ -869,6 +979,12 @@ namespace FFXIVDBM.Plugin
                         {
                             _agroList.Clear();
                             _enmityCached.Clear();
+                        }
+
+
+                        if (endEncounterAt > DateTime.Now && !playerEntity.EnmityEntries.Any())
+                        {
+                            endEncounter();
                         }
                     }
                     catch (Exception e2)
@@ -887,18 +1003,19 @@ namespace FFXIVDBM.Plugin
 
         static void tickTimerEvent(object sender, ElapsedEventArgs e)
         {
+            lock (tickLock)
+            {
+                if (inTick || playerEntity == null || _mobList == null || !setupDone)
+                {
+                    return;
+                }
+                // this ensures that we don't try to process more than one tick at a time on slower computers. Not likely to happen though
+                inTick = true;
+            }
+
             try
             {
-                lock (tickLock)
-                {
-                    if (inTick || playerEntity == null || mobList == null || !setupDone)
-                    {
-                        return;
-                    }
-                    // this ensures that we don't try to process more than one tick at a time on slower computers. Not likely to happen though
-                    inTick = true;
-                }
-
+                checkCurrentUserIntegrety();
 
 
 
@@ -933,13 +1050,16 @@ namespace FFXIVDBM.Plugin
                             debug("tick", getEngineVsEncounter(implementationClass), e2);
                         }
                     }
+                    inTick = false;
                 }
-
-                inTick = false;
             }
             catch (Exception ex2)
             {
                 debug("tickTimerEvent error: ", DBMErrorLevel.EngineErrors, ex2);
+            }
+            finally
+            {
+                inTick = false;
             }
         }
 
@@ -949,8 +1069,10 @@ namespace FFXIVDBM.Plugin
             try
             {
                 //debug("Removed Mob: " + currentEntity.Name + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ", " + (currentEntity.IsClaimed ? "claimed" : "not claimed") + ", by id: " + currentEntity.ClaimedByID + ")", DBMErrorLevel.Trace);
-                                       
-                _mobCached.Remove(cachedEntity);
+
+                ActorEntity tmp = null;
+
+                _mobCached.TryRemove(cachedEntity.ID, out tmp);
 
                 if (learningHelperClass != null)
                 {
@@ -1036,7 +1158,8 @@ namespace FFXIVDBM.Plugin
 
                 if (encounterStarted && !_agroList.Any())
                 {
-                    endEncounter();
+                    endEncounterAt = DateTime.Now + TimeSpan.FromSeconds(1);
+                    //endEncounter();
                 }
             }
             catch (Exception ex2)
@@ -1045,6 +1168,7 @@ namespace FFXIVDBM.Plugin
             }
         }
 
+        static DateTime endEncounterAt = DateTime.MaxValue;
 
         public static void endEncounter()
         {
@@ -1085,6 +1209,7 @@ namespace FFXIVDBM.Plugin
                 _enmityCached.Clear();
                 _mobCached.Clear();
                 encounterStarted = false;
+                endEncounterAt = DateTime.MaxValue;
             }
             catch (Exception ex2)
             {
@@ -1143,8 +1268,9 @@ namespace FFXIVDBM.Plugin
                     }
                 }
 
-                foreach (ActorEntity tmpEnt in _mobCached)
+                foreach (var KVP in _mobCached)
                 {
+                    ActorEntity tmpEnt = KVP.Value;
                     try
                     {
                         if (inst == implementationClass)
@@ -1253,19 +1379,29 @@ namespace FFXIVDBM.Plugin
 
                 if (testString.IsMatch(chatLogEntry))
                 {
+                    /*
                     if (!encounterStarted)
                     {
                         tts("DBM Ready");
                     }
                     else
                     {
+                     * */
                         foreach (ActorEntity pActor in _agroList)
                         {
                             debug("Dump Mob: " + pActor.Name + " (" + (pActor.IsValid ? "valid" : "not valid") + ", " + (pActor.IsClaimed ? "claimed" : "not claimed") + ", by id: " + pActor.ClaimedByID + ")", DBMErrorLevel.Trace);
                         }
-                    }
+                        foreach (EnmityEntry enmity in playerEntity.EnmityEntries)
+                        {
+                            debug("Dump Enmity: " + enmity.Name + " ID: " + enmity.ID + "", DBMErrorLevel.Trace);
+                        }
+                    //}
                 }
 
+                if (chatLogEntry.StartsWith("@"))
+                {
+                    tts(chatLogEntry.Trim('@'));
+                }
 
                 if (!encounterStarted)
                 {
@@ -1631,12 +1767,12 @@ namespace FFXIVDBM.Plugin
         {
             ActorEntity newEntity = new ActorEntity();
 
-            copyActorEntity(toClone, ref newEntity);
+            copyActorEntity(toClone, newEntity);
 
             return newEntity;
         }
 
-        public static void copyActorEntity(ActorEntity fromEntity, ref ActorEntity toEntity)
+        public static void copyActorEntity(ActorEntity fromEntity, ActorEntity toEntity)
         {
             try
             {
@@ -1661,6 +1797,7 @@ namespace FFXIVDBM.Plugin
                 tmpActor.GrandCompany = tmpEnt.GrandCompany;
                 tmpActor.GrandCompanyRank = tmpEnt.GrandCompanyRank;
                 tmpActor.Heading = tmpEnt.Heading;
+                tmpActor.HitBoxRadius = tmpEnt.HitBoxRadius;
                 tmpActor.HPCurrent = tmpEnt.HPCurrent;
                 tmpActor.HPMax = tmpEnt.HPMax;
                 tmpActor.Icon = tmpEnt.Icon;
