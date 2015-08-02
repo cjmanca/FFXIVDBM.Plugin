@@ -1,5 +1,5 @@
 ﻿// FFXIVDBM.Plugin
-// LocaleHelper.cs
+// Russian.cs
 // 
 // Copyright © 2007 - 2014 Ryan Wilson - All Rights Reserved
 // 
@@ -27,51 +27,26 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 // POSSIBILITY OF SUCH DAMAGE. 
 
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using System.Windows;
-using FFXIVDBM.Plugin.Localization;
 
-namespace FFXIVDBM.Plugin.Helpers
+namespace FFXIVDBM.Plugin.Localization
 {
-    internal static class LocaleHelper
+    public abstract class Russian
     {
+        private static readonly ResourceDictionary Dictionary = new ResourceDictionary();
+
         /// <summary>
         /// </summary>
-        /// <param name="cultureInfo"> </param>
-        public static Dictionary<string, string> Update(CultureInfo cultureInfo)
+        /// <returns> </returns>
+        public static ResourceDictionary Context()
         {
-            var culture = cultureInfo.TwoLetterISOLanguageName;
-            ResourceDictionary dictionary;
-            if (Constants.Supported.Contains(culture))
-            {
-                switch (culture)
-                {
-                    case "ja":
-                        dictionary = Japanese.Context();
-                        break;
-                    case "de":
-                        dictionary = German.Context();
-                        break;
-                    case "fr":
-                        dictionary = French.Context();
-                        break;
-                    case "ru":
-                        dictionary = Russian.Context();
-                        break;
-                    default:
-                        dictionary = English.Context();
-                        break;
-                }
-            }
-            else
-            {
-                dictionary = English.Context();
-            }
-            return dictionary.Cast<DictionaryEntry>()
-                             .ToDictionary(item => (string)item.Key, item => (string)item.Value);
+            Dictionary.Clear();
+            Dictionary.Add("DBM_DebugLogLevel", "Уровень Записей Отладки");
+            Dictionary.Add("DBM_VoiceVolumeHeader", "Громкость Предупреждений");
+            Dictionary.Add("sample_ChatLogTabHeader", "Записи Отладки");
+            Dictionary.Add("sample_ClearChatLogMessage", "Очистить Записи Отладки");
+            Dictionary.Add("sample_ClearChatLogToolTip", "Очистить Записи Отладки");
+            return Dictionary;
         }
     }
 }

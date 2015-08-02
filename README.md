@@ -9,15 +9,9 @@ This plugin will help provide warnings for different encounters, with customizab
 
 Currently, the following encounters are scripted and working 99.9%:
 * Titan Hard Mode (was my test encounter when first coding the plugin)
-* T6
-* T7
-* T8
-* T9
-* T10
-* T11
-* T12
-* T13
+* Binding Coil Turns 6-13 (SCOB 1-4, FCOB 1-4)
 * Ravana Extreme
+* Alexander Savage Floor 1
 
 If you have any programming knowledge at all (even basic), I'd encourage you to look at the existing scripts, and use it as a basis for creating new encounter scripts for other encounters. You can submit new encounter scripts on github, here:
 

@@ -1614,6 +1614,7 @@ namespace FFXIVDBM.Plugin
                     while (speaking)
                     {
                         // wait for previous speech to finish
+                        Thread.Sleep(0);
                     }
                     speaking = true;
                 }
@@ -1628,10 +1629,8 @@ namespace FFXIVDBM.Plugin
                         MemoryStream waveStream = new MemoryStream();
                         m_speechSynth.SetOutputToWaveStream(waveStream);
 
-                        //m_speechSynth.SpeakAsync(toRead);
-                        //m_speechSynth.SpeakCompleted += delegate
-
                         m_speechSynth.Speak(toRead);
+                        //m_speechSynth.SpeakAsync(toRead);
                         //m_speechSynth.SpeakCompleted += delegate
                         {
                             try
@@ -1650,23 +1649,23 @@ namespace FFXIVDBM.Plugin
                                 }
 
                             }
-                            catch (Exception ex)
+                            catch (Exception ex2)
                             {
-                                debug("SpeakCompleted", DBMErrorLevel.EngineErrors, ex);
+                                debug("SpeakCompleted", DBMErrorLevel.EngineErrors, ex2);
                             }
                         };
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex1)
                 {
-                    debug("tts", DBMErrorLevel.EngineErrors, ex);
+                    debug("tts2", DBMErrorLevel.EngineErrors, ex1);
                 }
 
                 speaking = false;
             }
-            catch
+            catch (Exception ex)
             {
-
+                debug("tts1", DBMErrorLevel.EngineErrors, ex);
             }
 
 
@@ -1687,7 +1686,7 @@ namespace FFXIVDBM.Plugin
                     {
                         lock (TTSQueue)
                         {
-                                any = TTSQueue.Any();
+                            any = TTSQueue.Any();
                         }
                     }
                     catch (Exception ex)
@@ -1730,16 +1729,16 @@ namespace FFXIVDBM.Plugin
                                         }
                                     }
                                 }
-                                catch (Exception e)
+                                catch (Exception ex2)
                                 {
-                                    debug("TTSThread Error 2: ", DBMErrorLevel.EngineErrors, e);
+                                    debug("TTSThread Error 2: ", DBMErrorLevel.EngineErrors, ex2);
                                 }
                             }
 
                         }
-                        catch (Exception ex)
+                        catch (Exception ex3)
                         {
-                            debug("TTSThread Error 3", DBMErrorLevel.EngineErrors, ex);
+                            debug("TTSThread Error 3", DBMErrorLevel.EngineErrors, ex3);
                         }
                         finally
                         {
@@ -1754,9 +1753,9 @@ namespace FFXIVDBM.Plugin
 
                     Thread.Sleep(50);
                 }
-                catch (Exception ex)
+                catch (Exception ex4)
                 {
-                    debug("TTSThread Error 4", DBMErrorLevel.EngineErrors, ex);
+                    debug("TTSThread Error 4", DBMErrorLevel.EngineErrors, ex4);
                 }
             }
         }
