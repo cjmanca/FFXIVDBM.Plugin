@@ -45,7 +45,7 @@ namespace OppressorNS8
 
             RotationAbility EmergencyDeployment = new RotationAbility(); // Emergency Deployment
             EmergencyDeployment.announceWarning = true;
-            EmergencyDeployment.warningTime = TimeSpan.FromSeconds(1);
+            EmergencyDeployment.warningTime = TimeSpan.FromSeconds(3);
             EmergencyDeployment.match = new Regex(@"\ readies\ Emergency\ Deployment\.");
             EmergencyDeployment.warningMessage = @"Adds";
 
@@ -63,7 +63,7 @@ namespace OppressorNS8
 
             RotationAbility EmergencyLiftoff = new RotationAbility(); // Emergency Liftoff
             EmergencyLiftoff.announceWarning = true;
-            EmergencyLiftoff.warningTime = TimeSpan.FromSeconds(5);
+            EmergencyLiftoff.warningTime = TimeSpan.FromSeconds(8);
             EmergencyLiftoff.match = new Regex(@"\ uses\ Emergency\ Liftoff\.");
             EmergencyLiftoff.warningMessage = @"Lift off";
 

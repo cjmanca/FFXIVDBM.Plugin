@@ -47,8 +47,10 @@ namespace FFXIVDBM.Plugin
             Plugin.PHost.NewPlayerEntity += OnNewPlayerEntity;
             Plugin.PHost.NewTargetEntity += OnNewTargetEntity;
             Plugin.PHost.NewPartyEntries += OnNewPartyEntries;
+            Plugin.PHost.NewNetworkPacket += OnNewNetworkPacket;
 
         }
+
 
         public static void UnSubscribe()
         {
@@ -60,9 +62,26 @@ namespace FFXIVDBM.Plugin
             Plugin.PHost.NewPlayerEntity -= OnNewPlayerEntity;
             Plugin.PHost.NewTargetEntity -= OnNewTargetEntity;
             Plugin.PHost.NewPartyEntries -= OnNewPartyEntries;
+            Plugin.PHost.NewNetworkPacket -= OnNewNetworkPacket;
         }
 
         #region Subscriptions
+
+        private static void OnNewNetworkPacket(object sender, NetworkPacketEvent networkPacketEvent)
+        {
+            // delegate event from network worker, this will be all incoming packets for the game
+            if (sender == null)
+            {
+                return;
+            }
+            var networkPacket = networkPacketEvent.Packet;
+            // networkPacket.Key is unique for each type of packet
+            // you will have to implement your own parsing of the newPacket.Message/Buffer after this
+            // packets are already decrypted
+
+            EncounterController.NetworkPacket(networkPacket);
+            //PacketHelper.ProcessPacket(networkPacket.Buffer, networkPacket.CurrentPosition, networkPacket.MessageSize, networkPacket.PacketDate);
+        }
 
         private static void OnNewConstantsEntity(object sender, ConstantsEntityEvent constantsEntityEvent)
         {
@@ -73,6 +92,7 @@ namespace FFXIVDBM.Plugin
             }
             var constantsEntity = constantsEntityEvent.ConstantsEntity;
             Constants.AutoTranslate = constantsEntity.AutoTranslate;
+            Constants.Acitons = constantsEntity.Actions;
             Constants.ChatCodes = constantsEntity.ChatCodes;
             Constants.Colors = constantsEntity.Colors;
             Constants.CultureInfo = constantsEntity.CultureInfo;

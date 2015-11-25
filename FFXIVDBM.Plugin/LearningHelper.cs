@@ -54,11 +54,15 @@ namespace EncounterNS
 
 
 
+        // these are always in english, since they're sent by the plugin directly
+        private Regex targetMarkerRegex = new Regex("^(?<name>.*) places a target marker over (?<target>.+) of type (?<type>.+)\\.$");
+        private Regex readiesRegex = new Regex("^(?<name>.+) readies (?<ability>.+)\\.$");
 
+
+        // these could be in other languages
         private Regex suffersRegex = new Regex("^(?<target>.+) suffers the effect of (?<ability>.+)\\.$");
         private Regex usesRegex = new Regex("^(?<name>.+) (?<uses>uses|casts) (?<ability>.+)\\.$");
-        private Regex readiesRegex = new Regex("^(?<name>.+) readies (?<ability>.+)\\.$");
-        private Regex startsUsingRegex = new Regex("^(?<name>.+) starts using (?<ability>.+) on (?<target>.+)\\.$");
+        private Regex startsUsingRegex = new Regex("^(?<name>.+) starts using (?<ability>.*) \\((?<abilityID>.+)\\) on (?<target>.+)\\.$");
         private Regex castingRegex = new Regex("^(?<name>.+) begins casting (?<ability>.+)\\.$");
         private Regex nameStripperRegex = new Regex("[^a-zA-Z0-9]");
         private Regex filenameStripperRegex = new Regex("[^a-zA-Z0-9 -]|^The ");
@@ -190,7 +194,7 @@ namespace EncounterNS
 
             if (lastSQLError != "")
             {
-                //debug("SQL error: " + lastSQLError, DBMErrorLevel.Notice);
+                //debug("SQL error: " + lastSQLError, DBMErrorLevel.FineTimings);
             }
 
 
@@ -224,7 +228,7 @@ namespace EncounterNS
 
             if (lastSQLError != "")
             {
-                debug("SQL error: " + lastSQLError, DBMErrorLevel.Notice);
+                debug("SQL error: " + lastSQLError, DBMErrorLevel.FineTimings);
             }
 
 
@@ -750,14 +754,18 @@ namespace EncounterNS
                         
                         name = m.Groups["name"].Value;
                         ability = m.Groups["ability"].Value;
+                        string abilityID = m.Groups["ability"].Value;
                         otherTarget = m.Groups["target"].Value;
 
-                        regexLogLine = Regex.Escape(" starts using " + ability + " on ") + "(.+)" + Regex.Escape(".");
+                        regexLogLine = Regex.Escape(" starts using ") + (ability == "" ? "(.*)" : Regex.Escape(ability)) + Regex.Escape(" (" + abilityID + ") on ") + "(.+)" + Regex.Escape(".");
+
+                        if (ability == "")
+                        {
+                            ability = abilityID;
+                        }
                     }
                     else
                     {
-
-
                         m = castingRegex.Match(line);
 
                         if (m.Success)
@@ -792,7 +800,12 @@ namespace EncounterNS
                                     }
                                 }
 
-                                if (!foundPerson || ability == "Pacification" || ability == "Weakness" || ability == "Brink of Death" || ability == "Holmgang")
+                                if (!foundPerson || 
+                                    ability == "Pacification" || 
+                                    ability == "Weakness" ||
+                                    ability == "Brink of Death" ||
+                                    ability == "Walking Dead" || 
+                                    ability == "Holmgang")
                                 {
                                     return;
                                 }
@@ -800,7 +813,27 @@ namespace EncounterNS
                             }
                             else
                             {
-                                return;
+                                m = targetMarkerRegex.Match(line);
+
+                                if (m.Success)
+                                {
+                                    hasTarget = true;
+
+                                    name = m.Groups["name"].Value;
+                                    ability = "Target Marker " + m.Groups["type"].Value;
+                                    otherTarget = m.Groups["target"].Value;
+
+                                    if (name == "")
+                                    {
+                                        name = ability;
+                                    }
+
+                                    regexLogLine = Regex.Escape(" places a target marker over ") +"(.+)" + Regex.Escape(" of type " + m.Groups["type"].Value + ".");
+                                }
+                                else
+                                {
+                                    return;
+                                }
                             }
                         }
                     }
@@ -1001,7 +1034,7 @@ namespace EncounterNS
                         }
                         catch (Exception ex2)
                         {
-                            debug("Create Database error 1: " + ex2.Message, DBMErrorLevel.Notice);
+                            debug("Create Database error 1: " + ex2.Message, DBMErrorLevel.FineTimings);
 
                             Marshal.ReleaseComObject(o);
                             return;
@@ -1017,7 +1050,7 @@ namespace EncounterNS
             }
             catch (Exception ex)
             {
-                debug("Create Database error 2: " + ex.Message, DBMErrorLevel.Notice);
+                debug("Create Database error 2: " + ex.Message, DBMErrorLevel.FineTimings);
                 return;
             }
 
@@ -1036,7 +1069,7 @@ namespace EncounterNS
                 }
                 catch (Exception ex)
                 {
-                    debug("Database error: " + ex.Message, DBMErrorLevel.Notice);
+                    debug("Database error: " + ex.Message, DBMErrorLevel.FineTimings);
                     return;
                 }
             }

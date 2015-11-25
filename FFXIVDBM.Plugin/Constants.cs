@@ -34,6 +34,7 @@ using System.IO;
 using System.Reflection;
 using System.Xml.Linq;
 using FFXIVAPP.Common.Helpers;
+using FFXIVAPP.Common.Core.Constant;
 
 namespace FFXIVDBM.Plugin
 {
@@ -156,6 +157,8 @@ namespace FFXIVDBM.Plugin
         public static bool EnableHelpLabels { get; set; }
 
         public static string Theme { get; set; }
+
+        public static Dictionary<string, ActionInfo> Acitons { get; set; }
 
         #endregion
     }

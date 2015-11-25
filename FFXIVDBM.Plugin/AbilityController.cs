@@ -178,6 +178,8 @@ namespace FFXIVDBM.Plugin
                     phases[_phase].onPhaseStart.start();
                 }
 
+                debug("Phase: " + _phase, DBMErrorLevel.Trace);
+
             }
 
             _inController = false;

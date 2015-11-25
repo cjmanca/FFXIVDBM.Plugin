@@ -158,7 +158,7 @@ namespace KaliyaNS
             SecondaryHead.announceWarning = true;
             SecondaryHead.match = new Regex(@"\ uses\ Secondary\ Head\.");
             SecondaryHead.warningMessage = @"Second Head";
-            SecondaryHead.warningTime = TimeSpan.FromSeconds(2);
+            SecondaryHead.warningTime = TimeSpan.FromSeconds(3);
 
 
             RotationAbility IntheHeadlights = new RotationAbility(); // In the Headlights

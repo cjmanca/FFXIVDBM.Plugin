@@ -24,9 +24,18 @@ using FFXIVDBM.Plugin.Views;
 using FFXIVDBM.Plugin.Properties;
 using System.Runtime.InteropServices;
 using System.Collections.Concurrent;
+using System.Speech.AudioFormat;
+using FFXIVAPP.Common.Core.Network;
+using FFXIVAPP.Common.Core.Constant;
 
 namespace FFXIVDBM.Plugin
 {
+    public enum MarkerTypeEnum
+    {
+        Ground = 1,
+        Target = 2,
+    }
+
     public enum DBMErrorLevel
     {
         FineTimings = 0,
@@ -61,7 +70,7 @@ namespace FFXIVDBM.Plugin
         }
 
 
-        private static ConcurrentDictionary<uint, ActorEntity> _mobList = new ConcurrentDictionary<uint, ActorEntity>();
+        internal static ConcurrentDictionary<uint, ActorEntity> _mobList = new ConcurrentDictionary<uint, ActorEntity>();
         public static ConcurrentDictionary<uint, ActorEntity> mobList
         {
             get
@@ -232,6 +241,7 @@ namespace FFXIVDBM.Plugin
 
 
         public static List<VoiceThroughNetAudio> TTSQueue = new List<VoiceThroughNetAudio>();
+        public static List<DirectSoundOut> TTSQueueDSO = new List<DirectSoundOut>();
         public static bool speaking = false;
         public static object speakingLock = new object();
 
@@ -251,6 +261,7 @@ namespace FFXIVDBM.Plugin
         private static Dictionary<string, Replacements> youSufferDict = new Dictionary<string, Replacements>();
         private static Dictionary<string, Replacements> youRecoverDict = new Dictionary<string, Replacements>();
         private static Dictionary<string, Regex> sealedOffDict = new Dictionary<string, Regex>();
+        private static Dictionary<string, Regex> noLongerSealedDict = new Dictionary<string, Regex>();
 
 
 
@@ -259,6 +270,9 @@ namespace FFXIVDBM.Plugin
         private static Replacements youSuffer = null;
         private static Replacements youRecover = null;
         private static Regex sealedOff = null;
+        private static Regex noLongerSealed = null;
+
+        private static bool isSealedOff = false;
 
         private static Regex testString = null;
         private static Regex repeatString = null;
@@ -285,6 +299,7 @@ namespace FFXIVDBM.Plugin
 
             try
             {
+
                 AppDomain.CurrentDomain.AssemblyResolve += OnCurrentDomainAssemblyResolve;
 
 
@@ -299,6 +314,7 @@ namespace FFXIVDBM.Plugin
                 youSufferDict["English"] = new Replacements(new Regex(@"^( ⇒ )?You suffer the effect of "), " suffers the effect of ");
                 youRecoverDict["English"] = new Replacements(new Regex(@"^( ⇒ )?You recover from the effect of "), " recovers from the effect of ");
                 sealedOffDict["English"] = new Regex(@" will be sealed off in 15 seconds\!");
+                noLongerSealedDict["English"] = new Regex(@" is no longer sealed\!");
 
                 // please send corrections for the replacements if needed
                 youGainDict["French"] = new Replacements(new Regex(@"^( ⇒ )?Vous bénéficiez? de l'effet "), " bénéficiez de l'effet ");
@@ -306,6 +322,7 @@ namespace FFXIVDBM.Plugin
                 youSufferDict["French"] = new Replacements(new Regex(@"^( ⇒ )?Vous subi(t|ssez?) l'effet "), " subissez l'effet ");
                 youRecoverDict["French"] = new Replacements(new Regex(@"^( ⇒ )?Vous (perd(ez?)?|ne subi(t|ssez?)) plus l'effet "), " perdez subissez plus l'effet ");
                 sealedOffDict["French"] = new Regex(@" will be sealed off in 15 seconds\!"); // TODO: Find out the French translation for this
+                noLongerSealedDict["French"] = new Regex(@" is no longer sealed\!"); // TODO: Find out the French translation for this
 
                 // Japanese log lines already use your own name by the looks of things from parser plugin regex file
                 // If this isn't correct, please tell me the proper lines to match
@@ -314,6 +331,7 @@ namespace FFXIVDBM.Plugin
                 youSufferDict["Japanese"] = null;
                 youRecoverDict["Japanese"] = null;
                 sealedOffDict["Japanese"] = new Regex(@" will be sealed off in 15 seconds\!"); // TODO: Find out the Japanese translation for this
+                noLongerSealedDict["Japanese"] = new Regex(@" is no longer sealed\!"); // TODO: Find out the Japanese translation for this
 
                 // I need working regex strings for several of these for the German language version
                 // please send corrections for the replacements if needed
@@ -322,6 +340,7 @@ namespace FFXIVDBM.Plugin
                 youSufferDict["German"] = null; // new Replacements(new Regex(@""), "");
                 youRecoverDict["German"] = null; // new Replacements(new Regex(@""), "");
                 sealedOffDict["German"] = new Regex(@" will be sealed off in 15 seconds\!"); // TODO: Find out the Japanese translation for this
+                noLongerSealedDict["German"] = new Regex(@" is no longer sealed\!"); // TODO: Find out the Japanese translation for this
 
                 // Setup parameters for dynamic class loading
                 setupClassAssembly();
@@ -377,6 +396,10 @@ namespace FFXIVDBM.Plugin
                 if (sealedOffDict.ContainsKey(Constants.GameLanguage))
                 {
                     sealedOff = sealedOffDict[Constants.GameLanguage];
+                }
+                if (noLongerSealedDict.ContainsKey(Constants.GameLanguage))
+                {
+                    noLongerSealed = noLongerSealedDict[Constants.GameLanguage];
                 }
 
                 if (youGain == null)
@@ -474,7 +497,6 @@ namespace FFXIVDBM.Plugin
                                 }
 
                                 _agroList.Add(currentEntity);
-                                endEncounterAt = DateTime.MaxValue;
 
 
                                 if (implementationClass != null)
@@ -658,7 +680,7 @@ namespace FFXIVDBM.Plugin
                     try
                     {
                         inController = false;
-                        debug("Added Mob: " + currentEntity.Name + " ID: " + currentEntity.ID + " NPCID1: " + currentEntity.NPCID1 + " NPCID2: " + currentEntity.NPCID2, DBMErrorLevel.Trace);
+                        debug("Added Mob: " + currentEntity.Name + " ID: " + currentEntity.ID + " NPCID1: " + currentEntity.NPCID1 + " NPCID2: " + currentEntity.NPCID2, DBMErrorLevel.FineTimings);
                         implementationClass.onMobAdded(currentEntity);
                         inController = true;
                     }
@@ -727,8 +749,16 @@ namespace FFXIVDBM.Plugin
 
                     if (!_mobList.ContainsKey(cachedEntity.ID))
                     {
-                        handleRemoveEntry = 1;
-                        handleRemove(cachedEntity, null);
+                        if (!removeEnemyTimeouts.ContainsKey(cachedEntity.ID))
+                        {
+                            removeEnemyTimeouts[cachedEntity.ID] = DateTime.Now + TimeSpan.FromSeconds(3);
+                        }
+
+                        if (DateTime.Now > removeEnemyTimeouts[cachedEntity.ID])
+                        {
+                            handleRemoveEntry = 1;
+                            handleRemove(cachedEntity, null);
+                        }
                     }
                     else
                     {
@@ -736,26 +766,55 @@ namespace FFXIVDBM.Plugin
 
                         if (currentEntity == null)
                         {
-                            handleRemoveEntry = 2;
-                            handleRemove(cachedEntity, currentEntity);
+                            if (!removeEnemyTimeouts.ContainsKey(cachedEntity.ID))
+                            {
+                                removeEnemyTimeouts[cachedEntity.ID] = DateTime.Now + TimeSpan.FromSeconds(3);
+                            }
+
+                            if (DateTime.Now > removeEnemyTimeouts[cachedEntity.ID])
+                            {
+                                handleRemoveEntry = 2;
+                                handleRemove(cachedEntity, currentEntity);
+                            }
                         }
                         else
                         {
                             if (!currentEntity.IsValid)
                             {
-                                handleRemoveEntry = 3;
-                                handleRemove(cachedEntity, currentEntity);
+                                if (!removeEnemyTimeouts.ContainsKey(cachedEntity.ID))
+                                {
+                                    removeEnemyTimeouts[cachedEntity.ID] = DateTime.Now + TimeSpan.FromSeconds(3);
+                                }
+
+                                if (DateTime.Now > removeEnemyTimeouts[cachedEntity.ID])
+                                {
+                                    handleRemoveEntry = 3;
+                                    handleRemove(cachedEntity, currentEntity);
+                                }
                             }
                             else
                             {
                                 // remove if dead
                                 if (currentEntity.HPCurrent <= 0)
                                 {
-                                    handleRemoveEntry = 5;
-                                    handleRemove(cachedEntity, currentEntity);
+                                    if (!removeEnemyTimeouts.ContainsKey(cachedEntity.ID))
+                                    {
+                                        removeEnemyTimeouts[cachedEntity.ID] = DateTime.Now + TimeSpan.FromSeconds(3);
+                                    }
+
+                                    if (DateTime.Now > removeEnemyTimeouts[cachedEntity.ID])
+                                    {
+                                        handleRemoveEntry = 5;
+                                        handleRemove(cachedEntity, currentEntity);
+                                    }
                                 }
                                 else
                                 {
+                                    if (removeEnemyTimeouts.ContainsKey(cachedEntity.ID))
+                                    {
+                                        removeEnemyTimeouts.Remove(cachedEntity.ID);
+                                    }
+
                                     // update our copy with the new info
                                     copyActorEntity(currentEntity, cachedEntity);
                                 }
@@ -775,6 +834,9 @@ namespace FFXIVDBM.Plugin
             }
 
         }
+
+        static Dictionary<uint, DateTime> removeAgroTimeouts = new Dictionary<uint, DateTime>();
+        static Dictionary<uint, DateTime> removeEnemyTimeouts = new Dictionary<uint, DateTime>();
 
         static void checkForRemovedAgro()
         {
@@ -796,42 +858,94 @@ namespace FFXIVDBM.Plugin
 
                     if (!mobList.ContainsKey(cachedEntity.ID))
                     {
-                        handleRemoveEntry = 1;
-                        handleRemoveAgro(cachedEntity, null);
+                        if (!removeAgroTimeouts.ContainsKey(cachedEntity.ID))
+                        {
+                            removeAgroTimeouts[cachedEntity.ID] = DateTime.Now + TimeSpan.FromSeconds(3);
+                        }
+
+                        if (DateTime.Now > removeAgroTimeouts[cachedEntity.ID])
+                        {
+                            handleRemoveEntry = 1;
+                            handleRemoveAgro(cachedEntity, null);
+                        }
                     }
                     else
                     {
                         ActorEntity currentEntity = mobList[cachedEntity.ID];
                         if (currentEntity == null)
                         {
-                            handleRemoveEntry = 2;
-                            handleRemoveAgro(cachedEntity, currentEntity);
+                            if (!removeAgroTimeouts.ContainsKey(cachedEntity.ID))
+                            {
+                                removeAgroTimeouts[cachedEntity.ID] = DateTime.Now + TimeSpan.FromSeconds(3);
+                            }
+
+                            if (DateTime.Now > removeAgroTimeouts[cachedEntity.ID])
+                            {
+                                handleRemoveEntry = 2;
+                                handleRemoveAgro(cachedEntity, currentEntity);
+                            }
                         }
                         else if (!currentEntity.IsValid)
                         {
-                            handleRemoveEntry = 3;
-                            handleRemoveAgro(cachedEntity, currentEntity);
+                            if (!removeAgroTimeouts.ContainsKey(cachedEntity.ID))
+                            {
+                                removeAgroTimeouts[cachedEntity.ID] = DateTime.Now + TimeSpan.FromSeconds(3);
+                            }
+
+                            if (DateTime.Now > removeAgroTimeouts[cachedEntity.ID])
+                            {
+                                handleRemoveEntry = 3;
+                                handleRemoveAgro(cachedEntity, currentEntity);
+                            }
                         }
                         else if (currentEntity.ClaimedByID == 0 || currentEntity.ClaimedByID >= 0xE0000000)
                         {
-                            handleRemoveEntry = 4;
-                            handleRemoveAgro(cachedEntity, currentEntity);
+                            if (!removeAgroTimeouts.ContainsKey(cachedEntity.ID))
+                            {
+                                removeAgroTimeouts[cachedEntity.ID] = DateTime.Now + TimeSpan.FromSeconds(3);
+                            }
+
+                            if (DateTime.Now > removeAgroTimeouts[cachedEntity.ID])
+                            {
+                                handleRemoveEntry = 4;
+                                handleRemoveAgro(cachedEntity, currentEntity);
+                            }
                         }
                         else if (currentEntity.HPCurrent <= 0)
                         {
-                            handleRemoveEntry = 5;
-                            handleRemoveAgro(cachedEntity, currentEntity);
+                            if (!removeAgroTimeouts.ContainsKey(cachedEntity.ID))
+                            {
+                                removeAgroTimeouts[cachedEntity.ID] = DateTime.Now + TimeSpan.FromSeconds(3);
+                            }
+
+                            if (DateTime.Now > removeAgroTimeouts[cachedEntity.ID])
+                            {
+                                handleRemoveEntry = 5;
+                                handleRemoveAgro(cachedEntity, currentEntity);
+                            }
                         }
-                        else if (!newEnmityList.ContainsKey(currentEntity.ID) && currentEntity.HPCurrent >= currentEntity.HPMax && CurrentUser.HPCurrent > 0)
+                        else if (!newEnmityList.ContainsKey(currentEntity.ID) && CurrentUser.HPCurrent > 0)
                         {
-                            // ClaimedByID seems unreliable sometimes, and IsClaimed never seems to work,
-                            // so instead, check to see if the mob is full health but NOT in the agroList anymore
-                            // Also make sure we're alive, since the agro list is temporarily empty when dead.
-                            handleRemoveEntry = 6;
-                            handleRemoveAgro(cachedEntity, currentEntity);
+                            if (!removeAgroTimeouts.ContainsKey(cachedEntity.ID))
+                            {
+                                removeAgroTimeouts[cachedEntity.ID] = DateTime.Now + TimeSpan.FromSeconds(3);
+                            }
+
+                            if (DateTime.Now > removeAgroTimeouts[cachedEntity.ID])
+                            {
+                                // ClaimedByID seems unreliable sometimes, and IsClaimed never seems to work,
+                                // so instead, check to see if the mob is full health but NOT in the agroList anymore
+                                // Also make sure we're alive, since the agro list is temporarily empty when dead.
+                                handleRemoveEntry = 6;
+                                handleRemoveAgro(cachedEntity, currentEntity);
+                            }
                         }
                         else
                         {
+                            if (removeAgroTimeouts.ContainsKey(cachedEntity.ID))
+                            {
+                                removeAgroTimeouts.Remove(cachedEntity.ID);
+                            }
                             // update our copy with the new info
                             copyActorEntity(currentEntity, cachedEntity);
                         }
@@ -866,7 +980,7 @@ namespace FFXIVDBM.Plugin
                 return false;
             }
 
-            ActorEntity tmpUser = pcEntities.First().Value;
+            ActorEntity tmpUser = pcEntities.FirstOrDefault().Value;
 
             if (tmpUser == null)
             {
@@ -982,10 +1096,6 @@ namespace FFXIVDBM.Plugin
                         }
 
 
-                        if (endEncounterAt > DateTime.Now && !playerEntity.EnmityEntries.Any())
-                        {
-                            endEncounter();
-                        }
                     }
                     catch (Exception e2)
                     {
@@ -1000,6 +1110,11 @@ namespace FFXIVDBM.Plugin
             }
             inUpdate = false;
         }
+
+
+
+
+
 
         static void tickTimerEvent(object sender, ElapsedEventArgs e)
         {
@@ -1050,7 +1165,6 @@ namespace FFXIVDBM.Plugin
                             debug("tick", getEngineVsEncounter(implementationClass), e2);
                         }
                     }
-                    inTick = false;
                 }
             }
             catch (Exception ex2)
@@ -1066,13 +1180,21 @@ namespace FFXIVDBM.Plugin
 
         public static void handleRemove(ActorEntity cachedEntity, ActorEntity currentEntity)
         {
+            if (CurrentUser == null || CurrentUser.HPCurrent <= 0)
+            {
+                return;
+            }
+
             try
             {
                 //debug("Removed Mob: " + currentEntity.Name + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ", " + (currentEntity.IsClaimed ? "claimed" : "not claimed") + ", by id: " + currentEntity.ClaimedByID + ")", DBMErrorLevel.Trace);
 
                 ActorEntity tmp = null;
 
-                _mobCached.TryRemove(cachedEntity.ID, out tmp);
+                if (cachedEntity != null)
+                {
+                    _mobCached.TryRemove(cachedEntity.ID, out tmp);
+                }
 
                 if (learningHelperClass != null)
                 {
@@ -1090,13 +1212,18 @@ namespace FFXIVDBM.Plugin
                 {
                     try
                     {
-                        if (currentEntity == null)
+                        if (currentEntity == null && cachedEntity != null)
                         {
-                            debug("Removed Mob: " + cachedEntity.Name + " ID: " + cachedEntity.ID + " NPCID1: " + cachedEntity.NPCID1 + " NPCID2: " + cachedEntity.NPCID2 + " (" + handleRemoveEntry + ", null)", DBMErrorLevel.Trace);
+                            debug("Removed Mob: " + cachedEntity.Name + " ID: " + cachedEntity.ID + " NPCID1: " + cachedEntity.NPCID1 + " NPCID2: " + cachedEntity.NPCID2 + " (" + handleRemoveEntry + ", null)", DBMErrorLevel.FineTimings);
+                        }
+                        else if (currentEntity != null)
+                        {
+                            debug("Removed Mob: " + currentEntity.Name + " ID: " + currentEntity.ID + " NPCID1: " + currentEntity.NPCID1 + " NPCID2: " + currentEntity.NPCID2 + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ")", DBMErrorLevel.FineTimings);
+                        
                         }
                         else
                         {
-                            debug("Removed Mob: " + currentEntity.Name + " ID: " + currentEntity.ID + " NPCID1: " + currentEntity.NPCID1 + " NPCID2: " + currentEntity.NPCID2 + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ")", DBMErrorLevel.Trace);
+                            debug("Removed Mob - currentEntity == null && cachedEntity == null (" + handleRemoveEntry, DBMErrorLevel.FineTimings);
                         }
                         inController = false;
                         implementationClass.onMobRemoved(cachedEntity);
@@ -1116,15 +1243,24 @@ namespace FFXIVDBM.Plugin
 
         public static void handleRemoveAgro(ActorEntity cachedEntity, ActorEntity currentEntity)
         {
+            if (CurrentUser == null || CurrentUser.HPCurrent <= 0)
+            {
+                return;
+            }
+
             try
             {
-                if (currentEntity == null)
+                if (currentEntity == null && cachedEntity != null)
                 {
                     debug("Removed Agro: " + cachedEntity.Name + " (" + handleRemoveEntry + ", null)", DBMErrorLevel.Trace);
                 }
-                else
+                else if (currentEntity != null)
                 {
                     debug("Removed Agro: " + currentEntity.Name + " (" + handleRemoveEntry + ", " + (currentEntity.IsValid ? "valid" : "not valid") + ", " + (currentEntity.IsClaimed ? "claimed" : "not claimed") + ", by id: " + currentEntity.ClaimedByID + ")", DBMErrorLevel.Trace);
+                }
+                else
+                {
+                    debug("Removed Agro: (" + handleRemoveEntry + ", null)", DBMErrorLevel.Trace);
                 }
                 _agroList.Remove(cachedEntity);
 
@@ -1156,10 +1292,9 @@ namespace FFXIVDBM.Plugin
                 }
 
 
-                if (encounterStarted && !_agroList.Any())
+                if (encounterStarted && !_agroList.Any() && currentEntity != null && currentEntity.HPCurrent > 0)
                 {
-                    endEncounterAt = DateTime.Now + TimeSpan.FromSeconds(1);
-                    //endEncounter();
+                    endEncounter();
                 }
             }
             catch (Exception ex2)
@@ -1168,12 +1303,15 @@ namespace FFXIVDBM.Plugin
             }
         }
 
-        static DateTime endEncounterAt = DateTime.MaxValue;
-
         public static void endEncounter()
         {
             try
             {
+                if (isSealedOff || (playerEntity != null && playerEntity.EnmityEntries != null && playerEntity.EnmityEntries.Any()))
+                {
+                    return;
+                }
+
                 if (learningHelperClass != null)
                 {
                     try
@@ -1209,7 +1347,6 @@ namespace FFXIVDBM.Plugin
                 _enmityCached.Clear();
                 _mobCached.Clear();
                 encounterStarted = false;
-                endEncounterAt = DateTime.MaxValue;
             }
             catch (Exception ex2)
             {
@@ -1275,7 +1412,7 @@ namespace FFXIVDBM.Plugin
                     {
                         if (inst == implementationClass)
                         {
-                            debug("Added Mob (Setup): " + tmpEnt.Name + " ID: " + tmpEnt.ID + " NPCID1: " + tmpEnt.NPCID1 + " NPCID2: " + tmpEnt.NPCID2, DBMErrorLevel.Trace);
+                            debug("Added Mob (Setup): " + tmpEnt.Name + " ID: " + tmpEnt.ID + " NPCID1: " + tmpEnt.NPCID1 + " NPCID2: " + tmpEnt.NPCID2, DBMErrorLevel.FineTimings);
                         }
                         inController = false;
                         inst.onMobAdded(tmpEnt);
@@ -1364,18 +1501,385 @@ namespace FFXIVDBM.Plugin
             }
         }
 
+        public static void NetworkPacket(NetworkPacket packet)
+        {
+            byte[] buffer = packet.Buffer;
+            int currentPos = packet.CurrentPosition;
+
+            uint ActorID;
+            uint TargetID;
+            uint Key;
+            int SkillID;
+            int MarkerType;
+            short subType;
+            ActorEntity Actor = null;
+            ActorEntity Target = null;
+
+            switch (packet.Key)
+            {
+                case 0x1960014: // network starts casting
+                    ActorID = BitConverter.ToUInt32(packet.Buffer, packet.CurrentPosition + 0x4);
+                    TargetID = BitConverter.ToUInt32(packet.Buffer, packet.CurrentPosition + 0x2C);
+                    SkillID = BitConverter.ToInt32(packet.Buffer, packet.CurrentPosition + 0x24);
+
+                    //debug("OnStartsCasting Raw: " + ActorID + ", " + TargetID + ", " + TargetID + ", " + SkillID);
+                    
+                    if (EncounterController._mobList.ContainsKey(ActorID))
+                        Actor = EncounterController._mobList[ActorID];
+                    else if (EncounterController.pcEntities.ContainsKey(ActorID))
+                        Actor = EncounterController.pcEntities[ActorID];
+                    else if (EncounterController.npcList.ContainsKey(ActorID))
+                        Actor = EncounterController.npcList[ActorID];
+
+                    if (EncounterController._mobList.ContainsKey(TargetID))
+                        Target = EncounterController._mobList[TargetID];
+                    else if (EncounterController.pcEntities.ContainsKey(TargetID))
+                        Target = EncounterController.pcEntities[TargetID];
+                    else if (EncounterController.npcList.ContainsKey(TargetID))
+                        Target = EncounterController.npcList[TargetID];
+
+                    if (Actor == null || Target == null)
+                    {
+                        return;
+                    }
+
+                    //if (OnStartsCasting != null)
+                    {
+                        OnStartsCasting(SkillID, Actor, Target);
+                    }
+
+
+                    break;
+
+                case 0x1460014: // network ability
+                    ActorID = BitConverter.ToUInt32(packet.Buffer, packet.CurrentPosition + 0x4);
+                    TargetID = BitConverter.ToUInt32(packet.Buffer, packet.CurrentPosition + 0x40);
+                    SkillID = BitConverter.ToInt32(packet.Buffer, packet.CurrentPosition + 0x2C);
+
+                    //debug("OnStartsAbility Raw: " + ActorID + ", " + TargetID + ", " + SkillID);
+                    
+                    if (EncounterController._mobList.ContainsKey(ActorID))
+                        Actor = EncounterController._mobList[ActorID];
+                    else if (EncounterController.pcEntities.ContainsKey(ActorID))
+                        Actor = EncounterController.pcEntities[ActorID];
+                    else if (EncounterController.npcList.ContainsKey(ActorID))
+                        Actor = EncounterController.npcList[ActorID];
+
+                    if (EncounterController._mobList.ContainsKey(TargetID))
+                        Target = EncounterController._mobList[TargetID];
+                    else if (EncounterController.pcEntities.ContainsKey(TargetID))
+                        Target = EncounterController.pcEntities[TargetID];
+                    else if (EncounterController.npcList.ContainsKey(TargetID))
+                        Target = EncounterController.npcList[TargetID];
+
+                    if (Actor == null || Target == null)
+                    {
+                        return;
+                    }
+
+                    //if (OnAbility != null)
+                    {
+                        OnAbility(SkillID, Actor, Target);
+                    }
+
+                    break;
+                case 0x1470014: // network aoe ability
+                    ActorID = BitConverter.ToUInt32(packet.Buffer, packet.CurrentPosition + 0x4);
+                    SkillID = BitConverter.ToInt32(packet.Buffer, packet.CurrentPosition + 0x2C);
+
+                    //debug("OnStartsAOEAbility Raw: " + ActorID + ", " + SkillID);
+
+                    if (EncounterController._mobList.ContainsKey(ActorID))
+                        Actor = EncounterController._mobList[ActorID];
+                    else if (EncounterController.pcEntities.ContainsKey(ActorID))
+                        Actor = EncounterController.pcEntities[ActorID];
+                    else if (EncounterController.npcList.ContainsKey(ActorID))
+                        Actor = EncounterController.npcList[ActorID];
+
+                    if (Actor == null)
+                    {
+                        return;
+                    }
+
+
+
+                    for (int index1 = 0; index1 < 16; ++index1)
+                    {
+                        TargetID = BitConverter.ToUInt32(buffer, currentPos + (273 + index1 * 2 + 1) * 4);
+                        if (TargetID != 0)
+                        {
+                            if (EncounterController._mobList.ContainsKey(TargetID))
+                                Target = EncounterController._mobList[TargetID];
+                            else if (EncounterController.pcEntities.ContainsKey(TargetID))
+                                Target = EncounterController.pcEntities[TargetID];
+                            else if (EncounterController.npcList.ContainsKey(TargetID))
+                                Target = EncounterController.npcList[TargetID];
+
+                            if (Target == null)
+                            {
+                                continue;
+                            }
+
+                            //if (OnAbility != null)
+                            {
+                                OnAbility(SkillID, Actor, Target);
+                            }
+
+                        }
+                    }
+
+
+
+                    break;
+                case 0x1410014:
+                    // network actor/buffs
+                    Key = BitConverter.ToUInt32(packet.Buffer, packet.CurrentPosition + 0x4);
+
+                    break;
+                case 0x1420014:
+                    // cancel action, death, target icon, dot
+                    subType = BitConverter.ToInt16(buffer, currentPos + 32);
+
+                    switch (subType)
+                    {
+                        case 32: //NetworkTargetIcon
+
+                            debug("NetworkTargetIcon" + BitConverter.ToUInt32(buffer, currentPos + 28).ToString("X4") + "|" + (BitConverter.ToUInt32(buffer, currentPos + 32) >> 16).ToString("X4") + "|" + BitConverter.ToUInt32(buffer, currentPos + 36).ToString("X4") + "|" + BitConverter.ToUInt32(buffer, currentPos + 40).ToString("X4") + "|" + BitConverter.ToUInt32(buffer, currentPos + 44).ToString("X4") + "|" + BitConverter.ToUInt32(buffer, currentPos + 48).ToString("X4"));
+                    
+                            break;
+                    }
+
+
+                    break;
+                case 0x1400014:
+                    // network actor/buffs
+                    Key = BitConverter.ToUInt32(packet.Buffer, packet.CurrentPosition + 0x4);
+
+                    break;
+                case 0x3350014:
+                    // network marker
+
+                    for (int i = 0; i < 3; ++i)
+                    {
+                        BitConverter.ToInt32(buffer, currentPos + (8 + i * 5) * 4);
+                        float PosX = BitConverter.ToSingle(buffer, currentPos + (8 + i * 5 + 2) * 4);
+                        float PosZ = BitConverter.ToSingle(buffer, currentPos + (8 + i * 5 + 3) * 4);
+                        float PosY = BitConverter.ToSingle(buffer, currentPos + (8 + i * 5 + 4) * 4);
+
+                        if (PosX != 0.0 || PosY != 0.0 || PosZ != 0.0)
+                        {
+                            //if (OnTargetMarker != null)
+                            {
+                                OnGroundMarker(i, PosX, PosZ, PosY);
+                            }
+                        }
+                    }
+
+                    break;
+                case 0x1440014:
+                    // network target marker
+                    TargetID = BitConverter.ToUInt32(buffer, currentPos + 56);
+                    ActorID = BitConverter.ToUInt32(buffer, currentPos + 40);
+                    MarkerType = BitConverter.ToInt32(buffer, currentPos + 36);
+
+                    if (MarkerType == 0)
+                    {
+                        return;
+                    }
+
+                    if (TargetID == 0)
+                        return;
+
+                    if ((int)TargetID == -536870912)
+                        return;
+
+                    if (EncounterController._mobList.ContainsKey(ActorID))
+                        Actor = EncounterController._mobList[ActorID];
+                    else if (EncounterController.pcEntities.ContainsKey(ActorID))
+                        Actor = EncounterController.pcEntities[ActorID];
+                    else if (EncounterController.npcList.ContainsKey(ActorID))
+                        Actor = EncounterController.npcList[ActorID];
+
+                    if (EncounterController._mobList.ContainsKey(TargetID))
+                        Target = EncounterController._mobList[TargetID];
+                    else if (EncounterController.pcEntities.ContainsKey(TargetID))
+                        Target = EncounterController.pcEntities[TargetID];
+                    else if (EncounterController.npcList.ContainsKey(TargetID))
+                        Target = EncounterController.npcList[TargetID];
+
+                    if (Target == null)
+                    {
+                        return;
+                    }
+
+                    //if (OnTargetMarker != null)
+                    {
+                        OnTargetMarker(MarkerType, Actor, Target);
+                    }
+
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        public static string GetLocalizedString(ActionInfo statusInfo)
+        {
+            var statusKey = statusInfo.EN;
+            switch (Constants.GameLanguage)
+            {
+                case "French":
+                    statusKey = statusInfo.FR;
+                    break;
+                case "Japanese":
+                    statusKey = statusInfo.JA;
+                    break;
+                case "German":
+                    statusKey = statusInfo.DE;
+                    break;
+                case "Chinese":
+                    statusKey = statusInfo.ZH;
+                    break;
+            }
+
+            return statusKey;
+        }
+        public static string GetLocalizedString(StatusLocalization statusInfo)
+        {
+            var statusKey = statusInfo.English;
+            switch (Constants.GameLanguage)
+            {
+                case "French":
+                    statusKey = statusInfo.French;
+                    break;
+                case "Japanese":
+                    statusKey = statusInfo.Japanese;
+                    break;
+                case "German":
+                    statusKey = statusInfo.German;
+                    break;
+                case "Chinese":
+                    statusKey = statusInfo.Chinese;
+                    break;
+            }
+
+            return statusKey;
+        }
+
+        private static string GetHexData(byte[] buffer, int offset)
+        {
+            uint num = BitConverter.ToUInt32(buffer, offset);
+            if ((int)num == 0)
+                return "0";
+            return num.ToString("X2");
+        }
+
+
+        static void OnAbility(int SkillID, ActorEntity Actor, ActorEntity Target)
+        {
+            return;
+
+            try
+            {
+                lock (accessControl)
+                {
+                    string chatLogEntry = Actor.Name + " uses " + StringHelper.TitleCase(GetLocalizedString(Constants.Acitons[SkillID.ToString()])) + " on " + Target.Name;
+
+                    //if (Actor.Type == FFXIVAPP.Common.Core.Memory.Enums.Actor.Type.Monster)
+                    {
+                        //debug("OnAbility: " + Actor.ID + " " + chatLogEntry + " " + Target.ID);
+                    }
+
+                    //dispatchChatLogEntry(chatLogEntry);
+                }
+            }
+            catch (Exception e)
+            {
+                debug("OnAbility Exception", DBMErrorLevel.EngineErrors, e, "#FF0000");
+            }
+        }
+
+
+        static void OnStartsCasting(int SkillID, ActorEntity Actor, ActorEntity Target)
+        {
+            try
+            {
+                string ability = "";
+
+                if (Constants.Acitons.ContainsKey(SkillID.ToString()))
+                {
+                    ability = StringHelper.TitleCase(GetLocalizedString(Constants.Acitons[SkillID.ToString()]));
+                }
+                string chatLogEntry = Actor.Name + " starts using " + ability + " (" + SkillID.ToString() + ") on " + Target.Name;
+
+                lock (accessControl)
+                {
+                    //if (Actor.Type == FFXIVAPP.Common.Core.Memory.Enums.Actor.Type.Monster)
+                    {
+                        //debug("OnStartsCasting: " + Actor.ID + " " + chatLogEntry + " " + Target.ID);
+                    }
+
+                    dispatchChatLogEntry(chatLogEntry);
+                }
+            }
+            catch (Exception e)
+            {
+                debug("OnStartsCasting Exception", DBMErrorLevel.EngineErrors, e, "#FF0000");
+            }
+        }
+
+
+        static void OnGroundMarker(int type, float x, float y, float z)
+        {
+            debug("Ground Marker received: " + type + " pos: " + x + ", " + y + ", " + z);
+        }
+
+        static void OnTargetMarker(int type, ActorEntity sourceEnt, ActorEntity targetEnt)
+        {
+            string actor = "";
+            string target = "";
+
+            try
+            {
+                if (sourceEnt != null)
+                {
+                    actor = sourceEnt.Name;
+                }
+                if (targetEnt != null)
+                {
+                    target = targetEnt.Name;
+                }
+
+                string chatLogEntry = actor + " places a target marker over " + target + " of type " + type + ".";
+
+                dispatchChatLogEntry(chatLogEntry);
+
+                debug("Target Marker received: " + type + " Source: " + actor + " Target: " + target);
+
+            }
+            catch (Exception e)
+            {
+                debug("Target Mark Exception", DBMErrorLevel.EngineErrors, e, "#FF0000");
+            }
+        }
+
         public static void OnNewChatLogEntry(object sender, ChatLogEntryEvent chatLogEntryEvent)
         {
             try
             {
+                string chatLogEntry = logStripper.Replace(chatLogEntryEvent.ChatLogEntry.Line, "");
+
+                if (chatLogEntry.StartsWith("@"))
+                {
+                    tts(chatLogEntry.Trim('@'));
+                }
+
                 // delegate event from chat log, not required to subsribe
                 // this updates 100 times a second and only sends a line when it gets a new one
                 if (sender == null || chatLogEntryEvent == null || chatLogEntryEvent.ChatLogEntry == null || !setupDone)
                 {
                     return;
                 }
-
-                string chatLogEntry = logStripper.Replace(chatLogEntryEvent.ChatLogEntry.Line, "");
 
                 if (testString.IsMatch(chatLogEntry))
                 {
@@ -1387,21 +1891,45 @@ namespace FFXIVDBM.Plugin
                     else
                     {
                      * */
-                        foreach (ActorEntity pActor in _agroList)
-                        {
-                            debug("Dump Mob: " + pActor.Name + " (" + (pActor.IsValid ? "valid" : "not valid") + ", " + (pActor.IsClaimed ? "claimed" : "not claimed") + ", by id: " + pActor.ClaimedByID + ")", DBMErrorLevel.Trace);
-                        }
-                        foreach (EnmityEntry enmity in playerEntity.EnmityEntries)
-                        {
-                            debug("Dump Enmity: " + enmity.Name + " ID: " + enmity.ID + "", DBMErrorLevel.Trace);
-                        }
+                    debug("Dumping actors...");
+
+                    foreach (ActorEntity pActor in _agroList)
+                    {
+                        debug("Dump Mob: " + pActor.Name + " (" + (pActor.IsValid ? "valid" : "not valid") + ", " + (pActor.IsClaimed ? "claimed" : "not claimed") + ", by id: " + pActor.ClaimedByID + ")", DBMErrorLevel.Trace);
+                    }
+                    foreach (EnmityEntry enmity in playerEntity.EnmityEntries)
+                    {
+                        debug("Dump Enmity: " + enmity.Name + " ID: " + enmity.ID + "", DBMErrorLevel.Trace);
+                    }
                     //}
                 }
 
-                if (chatLogEntry.StartsWith("@"))
+                if (sealedOff != null && sealedOff.IsMatch(chatLogEntry))
                 {
-                    tts(chatLogEntry.Trim('@'));
+                    isSealedOff = true;
+
+                    debug("Sealed Off");
+
+                    if ((DateTime.Now - started).Duration() > TimeSpan.FromSeconds(1))
+                    {
+                        handleRemoveEntryName = "Sealed Off";
+                        endEncounter();
+                        handleRemoveEntryName = "";
+                    }
+
                 }
+
+                if (isSealedOff && noLongerSealed != null && noLongerSealed.IsMatch(chatLogEntry))
+                {
+                    isSealedOff = false;
+
+                    debug("No Longer Sealed Off");
+
+                    handleRemoveEntryName = "No Longer Sealed Off";
+                    endEncounter();
+                    handleRemoveEntryName = "";
+                }
+
 
                 if (!encounterStarted)
                 {
@@ -1444,12 +1972,6 @@ namespace FFXIVDBM.Plugin
                         dispatchChatLogEntry(chatLogEntry);
                     }
 
-                    if (sealedOff != null && (DateTime.Now - started).Duration() > TimeSpan.FromSeconds(1) && sealedOff.IsMatch(chatLogEntry))
-                    {
-                        handleRemoveEntryName = "Sealed Off";
-                        endEncounter();
-                        handleRemoveEntryName = "";
-                    }
                 }
             }
             catch(Exception ex)
@@ -1457,7 +1979,6 @@ namespace FFXIVDBM.Plugin
                 debug("OnNewChatLogEntry", DBMErrorLevel.EngineErrors, ex);
             }
         }
-
         public static void dispatchChatLogEntry(string chatLogEntry)
         {
             if (learningHelperClass != null)
@@ -1565,44 +2086,52 @@ namespace FFXIVDBM.Plugin
             return DBMErrorLevel.EngineErrors;
         }
 
-        public static void debug(string message, DBMErrorLevel level = DBMErrorLevel.EncounterErrors, Exception ex = null)
+        static object debugLock = new object();
+
+        public static void debug(string message, DBMErrorLevel level = DBMErrorLevel.EncounterErrors, Exception ex = null, string color = "#FFFFFF")
         {
             try
             {
-                if (level >= errorLevel)
+                lock (debugLock)
                 {
-                    var timeStampColor = Settings.Default.TimeStampColor.ToString();
-                    DateTime now = DateTime.Now.ToUniversalTime();
-                    string debugInfo = "): ";
-                    string timeStamp = "[" + now.ToShortDateString() + " " + now.Hour + ":" + now.Minute.ToString("D2") + ":" + now.Second.ToString("D2") + ":" + now.Millisecond.ToString("D3") + "] ";
-                    string line = "";
-
-                    if (ex != null)
+                    if (level >= errorLevel)
                     {
-                        StackTrace st = new StackTrace(ex, true);
-                        // Get the top stack frame
-                        StackFrame frame = st.GetFrame(0);
+                        var timeStampColor = Settings.Default.TimeStampColor.ToString();
+                        DateTime now = DateTime.Now.ToUniversalTime();
+                        string debugInfo = "): ";
+                        string timeStamp = "[" + now.ToShortDateString() + " " + now.Hour + ":" + now.Minute.ToString("D2") + ":" + now.Second.ToString("D2") + ":" + now.Millisecond.ToString("D3") + "] ";
+                        string line = "";
 
-                        debugInfo = ":" + frame.GetFileName() + ":" + frame.GetMethod() + ":" + frame.GetFileLineNumber() + ":" + frame.GetFileColumnNumber() + ": " + ex.Message + "): ";
+                        if (ex != null)
+                        {
+                            StackTrace st = new StackTrace(ex, true);
+                            // Get the top stack frame
+                            StackFrame frame = st.GetFrame(0);
+
+                            debugInfo = ":" + frame.GetFileName() + ":" + frame.GetMethod() + ":" + frame.GetFileLineNumber() + ":" + frame.GetFileColumnNumber() + ": " + ex.Message + "): ";
+                        }
+
+
+                        line = timeStamp + "(" + Enum.GetName(typeof(DBMErrorLevel), level) + debugInfo + message;
+
+                        File.AppendAllText(debugLogPath, line + Environment.NewLine);
+
+                        FFXIVAPP.Common.Constants.FD.AppendFlow(timeStamp, "", line, new[]
+                            {
+                                timeStampColor, color
+                            }, MainView.View.ChatLogFD._FDR
+                        );
                     }
-
-
-                    line = timeStamp + "(" + Enum.GetName(typeof(DBMErrorLevel),level) + debugInfo + message;
-
-                    File.AppendAllText(debugLogPath, line + Environment.NewLine);
-
-                    FFXIVAPP.Common.Constants.FD.AppendFlow(timeStamp, "", line, new[]
-                    {
-                        timeStampColor, "#FFFFFF"
-                    }, MainView.View.ChatLogFD._FDR);
                 }
             }
             catch (Exception ex2)
             {
-                debug("Debug Error", DBMErrorLevel.EngineErrors, ex2);
+                // stack overflow.... dur
+                //debug("Debug Error", DBMErrorLevel.EngineErrors, ex2);
             }
         }
 
+        /** /
         public static void tts(string toRead)
         {
 
@@ -1627,7 +2156,9 @@ namespace FFXIVDBM.Plugin
                         //m_speechSynth.Rate = 2;
 
                         MemoryStream waveStream = new MemoryStream();
-                        m_speechSynth.SetOutputToWaveStream(waveStream);
+                        //m_speechSynth.SetOutputToWaveStream(waveStream);
+                        m_speechSynth.SetOutputToAudioStream(waveStream, new SpeechAudioFormatInfo(48000, AudioBitsPerSample.Sixteen, AudioChannel.Mono));
+
 
                         m_speechSynth.Speak(toRead);
                         //m_speechSynth.SpeakAsync(toRead);
@@ -1638,14 +2169,23 @@ namespace FFXIVDBM.Plugin
                                 m_speechSynth.SetOutputToNull();
 
                                 waveStream.Position = 0; // reset counter to start
+                                
 
 
-                                VoiceThroughNetAudio netAudio = new VoiceThroughNetAudio(waveStream, "WAV", FFXIVAPP.Common.Constants.DefaultAudioDevice);
+                                IWaveProvider provider = new RawSourceWaveStream(waveStream, new WaveFormat(48000, 1));
 
+                                DirectSoundOut _waveOutDevice = new DirectSoundOut(FFXIVAPP.Common.Constants.DefaultAudioDevice);
 
-                                lock (TTSQueue)
+                                _waveOutDevice.Init(provider);
+
+                                _waveOutDevice.PlaybackStopped += delegate
                                 {
-                                    TTSQueue.Add(netAudio);
+                                    waveStream.Dispose();
+                                };
+
+                                lock (TTSQueueDSO)
+                                {
+                                    TTSQueueDSO.Add(_waveOutDevice);
                                 }
 
                             }
@@ -1671,6 +2211,169 @@ namespace FFXIVDBM.Plugin
 
         }
 
+
+        public static void TTSThread()
+        {
+            DirectSoundOut toPlay = null;
+
+            while (true)
+            {
+                bool any = false;
+                
+                try
+                {
+                    try
+                    {
+                        lock (TTSQueueDSO)
+                        {
+                            any = TTSQueueDSO.Any();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        debug("TTSThread Error 1", DBMErrorLevel.EngineErrors, ex);
+                    }
+
+                    if (any) // something in queue
+                    {
+                        try
+                        {
+                            //MessageBox.Show("test");
+                            lock (TTSQueueDSO)
+                            {
+                                if (TTSQueueDSO.Any()) // could have changed between our locks
+                                {
+                                    toPlay = TTSQueueDSO.First();
+                                    TTSQueueDSO.Remove(toPlay);
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+                            }
+
+                            try
+                            {
+                                toPlay.Play();
+
+                                while (toPlay.PlaybackState != PlaybackState.Playing)
+                                {
+                                    Thread.Sleep(10);
+                                }
+
+                                DateTime started = DateTime.Now;
+
+                                while (toPlay.PlaybackState == PlaybackState.Playing)
+                                {
+                                    Thread.Sleep(50);
+                                }
+                            }
+                            catch (Exception ex2)
+                            {
+                                debug("TTSThread Error 2: ", DBMErrorLevel.EngineErrors, ex2);
+                            }
+
+                        }
+                        catch (Exception ex3)
+                        {
+                            debug("TTSThread Error 3", DBMErrorLevel.EngineErrors, ex3);
+                        }
+                        finally
+                        {
+                            if (toPlay != null)
+                            {
+                                toPlay.Dispose();
+                            }
+                        }
+
+                        Thread.Sleep(50);
+                    }
+
+                    Thread.Sleep(50);
+                }
+                catch (Exception ex4)
+                {
+                    debug("TTSThread Error 4", DBMErrorLevel.EngineErrors, ex4);
+                }
+            }
+        }
+
+        /**/
+        
+        
+        public static void tts(string toRead)
+        {
+            toRead = toRead.Trim();
+
+            if (toRead == "")
+            {
+                return;
+            }
+
+            try
+            {
+
+                lock (speakingLock)
+                {
+                    while (speaking)
+                    {
+                        // wait for previous speech to finish
+                    }
+                    speaking = true;
+                }
+
+                try
+                {
+                    using (SpeechSynthesizer m_speechSynth = new SpeechSynthesizer())
+                    {
+                        m_speechSynth.Volume = speechVolume;
+                        //m_speechSynth.Rate = 2;
+
+                        MemoryStream waveStream = new MemoryStream();
+                        m_speechSynth.SetOutputToWaveStream(waveStream);
+
+                        //m_speechSynth.SpeakAsync(toRead);
+                        //m_speechSynth.SpeakCompleted += delegate
+
+                        m_speechSynth.Speak(toRead);
+                        //m_speechSynth.SpeakCompleted += delegate
+                        {
+                            try
+                            {
+                                m_speechSynth.SetOutputToNull();
+
+                                waveStream.Position = 0; // reset counter to start
+
+
+                                VoiceThroughNetAudio netAudio = new VoiceThroughNetAudio(waveStream, "WAV", FFXIVAPP.Common.Constants.DefaultAudioDevice);
+
+
+                                lock (TTSQueue)
+                                {
+                                    TTSQueue.Add(netAudio);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                debug("SpeakCompleted", DBMErrorLevel.EngineErrors, ex);
+                            }
+                        };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    debug("tts", DBMErrorLevel.EngineErrors, ex);
+                }
+                speaking = false;
+            }
+            catch
+            {
+
+            }
+
+
+        }
+
         
         public static void TTSThread()
         {
@@ -1679,7 +2382,7 @@ namespace FFXIVDBM.Plugin
             while (true)
             {
                 bool any = false;
-                
+
                 try
                 {
                     try
@@ -1759,8 +2462,7 @@ namespace FFXIVDBM.Plugin
                 }
             }
         }
-
-
+        /**/
 
         public static ActorEntity cloneActorEntity(ActorEntity toClone)
         {

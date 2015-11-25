@@ -87,7 +87,7 @@ namespace BahamutPrimeNS
             DoubleDive.announceWarning = true;
             DoubleDive.match = new Regex(@"\ readies\ Double\ Dive\.");
             DoubleDive.warningMessage = @"Move";
-            DoubleDive.warningTime = TimeSpan.FromSeconds(1);
+            DoubleDive.warningTime = TimeSpan.FromSeconds(0.5);
 
 
 
@@ -109,7 +109,7 @@ namespace BahamutPrimeNS
             Teraflare.announceWarning = true;
             Teraflare.match = new Regex(@"\ readies\ Teraflare\.");
             Teraflare.warningMessage = @"Tera flare";
-            Teraflare.warningTime = TimeSpan.FromSeconds(-15);
+            Teraflare.warningTime = TimeSpan.FromSeconds(-14);
 
             RotationAbility AkhMorn = new RotationAbility(); // Akh Morn
             AkhMorn.announceWarning = true;

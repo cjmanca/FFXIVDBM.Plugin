@@ -1,7 +1,7 @@
 {
     "PluginInfo": {
         "Name": "FFXIVDBM.Plugin",
-        "Version": "1.0.5692.23805",
+        "Version": "1.0.5806.39834",
         "FriendlyName": "Deadly Boss Mods",
         "Description": "Gives audible warnings for many encounters",
         "SourceURI": "https://github.com/cjmanca/FFXIVDBM.Plugin/raw/master/distribution/",
@@ -9,7 +9,7 @@
             {
                 "Name": "FFXIVDBM.Plugin.dll",
                 "Location": "",
-                "Checksum": "6e096112d950fbf72965a44bac9a4f04"
+                "Checksum": "28c0a0a839b2234ac0f40592008f3fbd"
             },
             {
                 "Name": "Logo.png",
@@ -54,7 +54,7 @@
             {
                 "Name": "Kaliya.cs",
                 "Location": "zones/English/194",
-                "Checksum": "95b2639dcd4c8796f4bcdb7ba701bf24"
+                "Checksum": "620eaabf413195cadd1a1a0e3925224c"
             },
             {
                 "Name": "Final Coil of Bahamut - Turn 3.txt",
@@ -69,7 +69,7 @@
             {
                 "Name": "Bahamut Prime.cs",
                 "Location": "zones/English/196",
-                "Checksum": "351712e802d98ee2a5053bffdb231f7c"
+                "Checksum": "b0f3b50662e077297039b197155efa71"
             },
             {
                 "Name": "Final Coil of Bahamut - Turn 4.txt",
@@ -137,6 +137,16 @@
                 "Checksum": "d472f9e9f9c98eaef77cbe3d37eeb34e"
             },
             {
+                "Name": "King Thordan.cs",
+                "Location": "zones/English/448",
+                "Checksum": "b6e8993fc2ab25f9d591bb54c923ef39"
+            },
+            {
+                "Name": "Thordan (Extreme).txt",
+                "Location": "zones/English/448",
+                "Checksum": "941f4da954104851884c791a7076fa08"
+            },
+            {
                 "Name": "Alex Floor 1 (Savage).txt",
                 "Location": "zones/English/449",
                 "Checksum": "f27762d926a83b2749bb9f32074d3d0d"
@@ -144,7 +154,17 @@
             {
                 "Name": "Oppressor.cs",
                 "Location": "zones/English/449",
-                "Checksum": "8a49198581f4dae1fe31b4e4f3a21272"
+                "Checksum": "02a650a2d207aaa8f8bc8d8a0039518f"
+            },
+            {
+                "Name": "Alex Floor 2 (Savage).txt",
+                "Location": "zones/English/450",
+                "Checksum": "f27762d926a83b2749bb9f32074d3d0d"
+            },
+            {
+                "Name": "Gordian Soldier.cs",
+                "Location": "zones/English/450",
+                "Checksum": "cdae5e8bd37b1d3ed4537d051dc38218"
             }
         ]
     }
