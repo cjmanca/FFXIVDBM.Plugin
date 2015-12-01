@@ -49,7 +49,7 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
@@ -64,9 +64,9 @@
       <HintPath>..\..\ffxivapp-resources\FFXIVAPP.IPluginInterface.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="FFXIVAPP.Localization">
-      <HintPath>..\..\ffxivapp-resources\FFXIVAPP.Localization.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="FFXIVAPP.Memory, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Parser\FFXIVAPP.Memory.dll</HintPath>
     </Reference>
     <Reference Include="HtmlAgilityPack">
       <HintPath>..\packages\HtmlAgilityPack.1.4.6\lib\Net45\HtmlAgilityPack.dll</HintPath>

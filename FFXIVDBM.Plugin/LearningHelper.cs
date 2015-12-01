@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using FFXIVDBM.Plugin;
-using FFXIVAPP.Common.Core.Memory;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Data;
 using System.Data.OleDb;
 using System.Runtime.InteropServices;
+using FFXIVAPP.Memory.Core;
 
 namespace EncounterNS
 {

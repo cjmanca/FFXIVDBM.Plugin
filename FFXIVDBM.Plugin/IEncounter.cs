@@ -1,4 +1,4 @@
-﻿using FFXIVAPP.Common.Core.Memory;
+﻿using FFXIVAPP.Memory.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;

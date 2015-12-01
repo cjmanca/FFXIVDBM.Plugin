@@ -28,11 +28,11 @@
 // POSSIBILITY OF SUCH DAMAGE. 
 
 using System;
-using FFXIVAPP.Common.Core.Memory;
 using FFXIVAPP.Common.Utilities;
 using NLog;
 using FFXIVDBM.Plugin.Properties;
 using FFXIVDBM.Plugin.Views;
+using FFXIVAPP.Memory.Core;
 
 namespace FFXIVDBM.Plugin.Utilities
 {

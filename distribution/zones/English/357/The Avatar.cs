@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using FFXIVDBM.Plugin;
-using FFXIVAPP.Common.Core.Memory;
+using FFXIVAPP.Memory.Core;
 using System.Text.RegularExpressions;
 
 namespace TheAvatarEncounter
@@ -515,9 +515,9 @@ namespace TheAvatarEncounter
         {
             lifeDrainSnapshot.Clear();
 
-            foreach (ActorEntity pe in pcEntities)
+            foreach (var pe in pcEntities)
             {
-                lifeDrainSnapshot[pe.Name.Trim()] = new Coordinate(pe.Coordinate.X, pe.Coordinate.Z, pe.Coordinate.Y);
+                lifeDrainSnapshot[pe.Value.Name.Trim()] = new Coordinate(pe.Value.Coordinate.X, pe.Value.Coordinate.Z, pe.Value.Coordinate.Y);
             }
 
             lastSnapshot = DateTime.Now;

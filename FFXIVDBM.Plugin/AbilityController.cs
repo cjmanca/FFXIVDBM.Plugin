@@ -1,5 +1,6 @@
-﻿using FFXIVAPP.Common.Core.Memory;
-using FFXIVAPP.Common.Helpers;
+﻿using FFXIVAPP.Common.Helpers;
+using FFXIVAPP.Memory.Core;
+using FFXIVAPP.Memory.Helpers;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

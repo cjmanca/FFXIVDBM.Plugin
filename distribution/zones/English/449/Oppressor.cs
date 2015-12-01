@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using FFXIVDBM.Plugin;
-using FFXIVAPP.Common.Core.Memory;
+using FFXIVAPP.Memory.Core;
 using System.Text.RegularExpressions;
 
 namespace OppressorNS8

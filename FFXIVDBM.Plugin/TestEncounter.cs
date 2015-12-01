@@ -4,8 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using FFXIVDBM.Plugin;
-using FFXIVAPP.Common.Core.Memory;
 using System.Text.RegularExpressions;
+using FFXIVAPP.Memory.Core;
 
 namespace FFXIVDBM.Plugin
 {

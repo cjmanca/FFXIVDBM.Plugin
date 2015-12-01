@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using FFXIVDBM.Plugin;
-using FFXIVAPP.Common.Core.Memory;
+using FFXIVAPP.Memory.Core;
 using System.Text.RegularExpressions;
 
 namespace NaelDeusDarnusNS
@@ -201,13 +201,13 @@ namespace NaelDeusDarnusNS
 
                 string output = "except ";
 
-                foreach (PartyEntity member in partyList)
+                foreach (var member in partyList)
                 {
-                    foreach (StatusEntry status in member.StatusEntries)
+                    foreach (var status in member.Value.StatusEntries)
                     {
                         if (status.StatusName == "Firescorched")
                         {
-                            output += member.Name + " ";
+                            output += member.Value.Name + " ";
                         }
                     }
                 }
@@ -238,13 +238,13 @@ namespace NaelDeusDarnusNS
             {
                 string output = "";
 
-                foreach (ActorEntity mob in mobList)
+                foreach (var mob in mobList)
                 {
-                    output += Environment.NewLine + "Mob: " + mob.Name + " (" + mob.Coordinate.X + ", " + mob.Coordinate.Y + ", " + mob.Coordinate.Z + ")";
+                    output += Environment.NewLine + "Mob: " + mob.Value.Name + " (" + mob.Value.Coordinate.X + ", " + mob.Value.Coordinate.Y + ", " + mob.Value.Coordinate.Z + ")";
                 }
-                foreach (ActorEntity mob in pcEntities)
+                foreach (var mob in pcEntities)
                 {
-                    output += Environment.NewLine + "Player: " + mob.Name + " (" + mob.Coordinate.X + ", " + mob.Coordinate.Y + ", " + mob.Coordinate.Z + ")";
+                    output += Environment.NewLine + "Player: " + mob.Value.Name + " (" + mob.Value.Coordinate.X + ", " + mob.Value.Coordinate.Y + ", " + mob.Value.Coordinate.Z + ")";
                 }
 
                 debug(output, DBMErrorLevel.EncounterInfo);
@@ -455,20 +455,20 @@ namespace NaelDeusDarnusNS
             if (mob.Name.Contains("The Ghost Of Meracydia"))
             {
                 bool found = false;
-                foreach (PartyEntity player in partyList)
+                foreach (var player in partyList)
                 {
                     try
                     {
-                        debug("player: " + player.Name);
-                        foreach (StatusEntry status in player.StatusEntries)
+                        debug("player: " + player.Value.Name);
+                        foreach (StatusEntry status in player.Value.StatusEntries)
                         {
                             try
                             {
-                                debug("player: " + player.Name + " - " + status.StatusName);
+                                debug("player: " + player.Value.Name + " - " + status.StatusName);
                                 if (status.StatusName.Contains("Garrote Twist"))
                                 {
                                     found = true;
-                                    tts(player.Name);
+                                    tts(player.Value.Name);
                                 }
                             }
                             catch { }

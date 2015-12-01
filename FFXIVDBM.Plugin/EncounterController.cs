@@ -2,7 +2,6 @@
 using System;
 using System.Linq;
 using FFXIVAPP.IPluginInterface.Events;
-using FFXIVAPP.Common.Core.Memory;
 using FFXIVAPP.Common.Helpers;
 using FFXIVDBM.Plugin.Utilities;
 using System.Collections.Generic;
@@ -27,6 +26,9 @@ using System.Collections.Concurrent;
 using System.Speech.AudioFormat;
 using FFXIVAPP.Common.Core.Network;
 using FFXIVAPP.Common.Core.Constant;
+using FFXIVAPP.Memory.Models;
+using FFXIVAPP.Memory.Core;
+using FFXIVAPP.Memory.Helpers;
 
 namespace FFXIVDBM.Plugin
 {
@@ -968,7 +970,8 @@ namespace FFXIVDBM.Plugin
 
         static uint lastMapIndex = 0;
         static int lastLevel = 0;
-        static FFXIVAPP.Common.Core.Memory.Enums.Actor.Job lastJob = FFXIVAPP.Common.Core.Memory.Enums.Actor.Job.Unknown;
+        static FFXIVAPP.Memory.Core.Enums.Actor.Job lastJob = FFXIVAPP.Memory.Core.Enums.Actor.Job.Unknown;
+
 
         static bool checkCurrentUserIntegrety()
         {
@@ -1303,13 +1306,17 @@ namespace FFXIVDBM.Plugin
             }
         }
 
-        public static void endEncounter()
+        public static void endEncounter(bool force = false)
         {
             try
             {
-                if (isSealedOff || (playerEntity != null && playerEntity.EnmityEntries != null && playerEntity.EnmityEntries.Any()))
+                if (!force)
                 {
-                    return;
+                    if (isSealedOff || (playerEntity != null && playerEntity.EnmityEntries != null && playerEntity.EnmityEntries.Any()))
+                    {
+                        debug("endEncounter error: " + isSealedOff + ", " + (playerEntity == null ? "null, " : "not null, ") + (playerEntity.EnmityEntries == null ? "null, " : "not null, ") + playerEntity.EnmityEntries.Any(), DBMErrorLevel.EngineErrors);
+                        return;
+                    }
                 }
 
                 if (learningHelperClass != null)
@@ -1638,11 +1645,11 @@ namespace FFXIVDBM.Plugin
                     break;
                 case 0x1420014:
                     // cancel action, death, target icon, dot
-                    subType = BitConverter.ToInt16(buffer, currentPos + 32);
+                    subType = BitConverter.ToInt16(buffer, currentPos + 8*4);
 
                     switch (subType)
                     {
-                        case 32: //NetworkTargetIcon
+                        case 0x22: //NetworkTargetIcon
 
                             debug("NetworkTargetIcon" + BitConverter.ToUInt32(buffer, currentPos + 28).ToString("X4") + "|" + (BitConverter.ToUInt32(buffer, currentPos + 32) >> 16).ToString("X4") + "|" + BitConverter.ToUInt32(buffer, currentPos + 36).ToString("X4") + "|" + BitConverter.ToUInt32(buffer, currentPos + 40).ToString("X4") + "|" + BitConverter.ToUInt32(buffer, currentPos + 44).ToString("X4") + "|" + BitConverter.ToUInt32(buffer, currentPos + 48).ToString("X4"));
                     
@@ -1913,7 +1920,7 @@ namespace FFXIVDBM.Plugin
                     if ((DateTime.Now - started).Duration() > TimeSpan.FromSeconds(1))
                     {
                         handleRemoveEntryName = "Sealed Off";
-                        endEncounter();
+                        endEncounter(true);
                         handleRemoveEntryName = "";
                     }
 
@@ -1926,7 +1933,7 @@ namespace FFXIVDBM.Plugin
                     debug("No Longer Sealed Off");
 
                     handleRemoveEntryName = "No Longer Sealed Off";
-                    endEncounter();
+                    endEncounter(true);
                     handleRemoveEntryName = "";
                 }
 
@@ -2640,10 +2647,10 @@ namespace FFXIVDBM.Plugin
                 cp.ReferencedAssemblies.Add(typeof(System.Xml.Linq.Extensions).Assembly.Location);
                 cp.ReferencedAssemblies.Add(typeof(System.IO.FileFormatException).Assembly.Location);
 
-                cp.ReferencedAssemblies.Add(typeof(FFXIVAPP.Common.Helpers.ZoneHelper).Assembly.Location);
-                cp.ReferencedAssemblies.Add(typeof(FFXIVAPP.Common.Core.Memory.StatusEntry).Assembly.Location);
+                cp.ReferencedAssemblies.Add(typeof(ActorEntity).Assembly.Location);
+                cp.ReferencedAssemblies.Add(typeof(FFXIVAPP.Memory.Helpers.ZoneHelper).Assembly.Location);
+                cp.ReferencedAssemblies.Add(typeof(FFXIVAPP.Memory.Core.StatusEntry).Assembly.Location);
                 cp.ReferencedAssemblies.Add(typeof(FFXIVAPP.IPluginInterface.IPlugin).Assembly.Location);
-
 
 
                 extAssembly = Path.Combine(
@@ -2654,6 +2661,11 @@ namespace FFXIVDBM.Plugin
                 extAssembly = Path.Combine(
                              Constants.AppDirectory,
                               "FFXIVAPP.Common.dll");
+                cp.ReferencedAssemblies.Add(extAssembly);
+
+                extAssembly = Path.Combine(
+                             Constants.AppDirectory,
+                              "FFXIVAPP.Memory.dll");
                 cp.ReferencedAssemblies.Add(extAssembly);
 
                 extAssembly = Path.Combine(
